@@ -6,7 +6,6 @@ import Navbar from '../../../components/Navbar';
 import {
   getMasterCaseByIdentity,
   getCaseLogs,
-  getCaseAppointments,
   updateHistoryResponse,
   getCaseAnswers,
   getFormById 
@@ -15,7 +14,7 @@ import {
 import {
   FiEye, FiEyeOff, FiClock,
   FiFileText, FiUser, FiActivity,
-  FiMessageSquare, FiCalendar, FiPlusCircle, FiInfo, FiX,
+  FiMessageSquare, FiPlusCircle, FiInfo, FiX,
   FiAlertCircle,FiChevronDown, FiChevronUp
 } from 'react-icons/fi';
 
@@ -95,7 +94,6 @@ export default function HistoryResult() {
 
   const [data, setData] = useState([]);
   const [masterCases, setMasterCases] = useState([]);
-  const [appointments, setAppointments] = useState([]);
 
   const [showId, setShowId] = useState(false);
   const [expanded, setExpanded] = useState(null);
@@ -146,26 +144,6 @@ export default function HistoryResult() {
           allLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           setCaseLogs(allLogs);
 
-          const masterApptPromises = mCases.map(mc =>
-            getCaseAppointments(mc.id, 'master')
-              .then(r => {
-                const rel = fetchedResponses.find(d => d.master_case_id === mc.id);
-                return r.data.map(a => ({ ...a, clinic_type: rel?.clinicType || rel?.clinic_type || mc.clinicType || 'general' }));
-              })
-              .catch(() => [])
-          );
-
-          const legacyResponses = fetchedResponses.filter(r => !r.master_case_id);
-          const legacyApptPromises = legacyResponses.map(c =>
-            getCaseAppointments(c.id, 'response')
-              .then(r => r.data.map(a => ({ ...a, clinic_type: c.clinicType || c.clinic_type || 'general' })))
-              .catch(() => [])
-          );
-
-          const apptsResponses = await Promise.all([...masterApptPromises, ...legacyApptPromises]);
-          const allAppts = apptsResponses.flat();
-          allAppts.sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
-          setAppointments(allAppts);
         }
 
       } catch (err) {
@@ -325,9 +303,13 @@ if (loading) return (
   });
 
   const timelineEvents = [
-    ...data.map(d => ({ type: 'form', date: new Date(d.submitted_at), data: d, clinic_type: d.clinicType || d.clinic_type || 'general' })),
-    ...appointments.map(a => ({ type: 'appt', date: new Date(a.appointment_date), data: a, clinic_type: a.clinicType || a.clinic_type || 'general' }))
-  ].sort((a, b) => b.date - a.date);
+  ...data.map(d => ({
+    type: 'form',
+    date: new Date(d.submitted_at),
+    data: d,
+    clinic_type: d.clinicType || d.clinic_type || 'general'
+  }))
+].sort((a, b) => b.date - a.date);
 
   const filteredTimeline = timelineEvents.filter(ev => timelineFilter === 'all' || ev.clinic_type === timelineFilter);
   const activeCases = masterCases.filter(mc => mc.status === 'Open');
@@ -420,7 +402,7 @@ if (loading) return (
               const relatedResponse = data.find(d => d.master_case_id === mc.id);
               const actualClinicType = mc.clinicType || mc.clinic_type || relatedResponse?.clinicType || relatedResponse?.clinic_type || 'general';
               const cInfo = CLINIC_INFO[actualClinicType] || CLINIC_INFO.general;
-              const upcomingAppt = appointments.find(a => a.master_case_id === mc.id && new Date(a.appointment_date) > new Date());
+              
               const currentStatus = relatedResponse?.status || "รอติดต่อ (รอดำเนินการ)";
 
               return (
@@ -438,19 +420,7 @@ if (loading) return (
                     </div>
                   </div>
 
-                  {upcomingAppt && (
-                    <div className="hr-upcoming-appt-box">
-                      <FiCalendar size={20} color="#ea580c" style={{ flexShrink: 0 }} />
-                      <div>
-                        <div className="hr-upcoming-appt-title">
-                          นัดหมายครั้งถัดไป {upcomingAppt.service_name ? `(${upcomingAppt.service_name})` : ''}
-                        </div>
-                        <div className="hr-upcoming-appt-date">
-                          {formatDate(upcomingAppt.appointment_date)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  
                 </div>
               );
             })}
@@ -572,30 +542,7 @@ if (loading) return (
           {filteredTimeline.map((event, idx) => {
             const cInfo = CLINIC_INFO[event.clinic_type] || CLINIC_INFO.general;
 
-            if (event.type === 'appt') {
-              const appt = event.data;
-              return (
-                <div key={`appt-${appt.id || idx}`} className="hr-timeline-item">
-                  <div className="hr-timeline-marker appt-marker" style={{ backgroundColor: '#f97316', borderColor: '#fff7ed' }}>
-                    <FiCalendar size={10} color="white" />
-                  </div>
-                  <div className="hr-appt-card" style={{ borderColor: '#fdba74', backgroundColor: '#fff7ed', padding: '16px', borderRadius: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div className="hr-appt-icon-box" style={{ backgroundColor: 'white', padding: '10px', borderRadius: '8px' }}>
-                        <FiCalendar size={20} color="#ea580c" />
-                      </div>
-                      <div className="hr-appt-content">
-                        <div style={{ color: '#ea580c', fontWeight: 'bold', fontSize: '16px' }}>นัดหมายเข้ารับบริการ</div>
-                        <div style={{ color: '#431407', fontSize: '15px', marginTop: '4px' }}>
-                          วันที่ <strong>{formatDate(appt.appointment_date)}</strong>
-                        </div>
-                        {appt.note && <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>หมายเหตุ: {appt.note}</div>}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
+            
 
             const record = event.data;
             const sd = record.summary_data || {};

@@ -381,8 +381,22 @@ body {
   color: #ef4444 !important;
   transform: scale(1.2);
 }
+.swal2-popup.swal2-modal {
+  padding: 1.5rem 1rem !important;
+  border-radius: 24px !important;
+  font-family: 'Sarabun', sans-serif !important;
+}
 .swal2-title {
-  font-size: var(--eval-main-title-size) !important;
+  font-size: 1.25rem !important;
+  line-height: 1.4 !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+}
+.swal2-html-container {
+  font-size: 0.95rem !important;
+  line-height: 1.6 !important;
+  color: #475569 !important;
+  margin: 1rem 0 !important;
 }
 .swal2-html-container input[type="radio"] {
   width: var(--eval-radio-size) !important;
@@ -398,6 +412,13 @@ body {
   cursor: pointer;
   font-size: var(--eval-label-size) !important;
 }
+.swal2-actions {
+  margin-top: 1.5rem !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  gap: 12px !important;
+}
 .evaluation-labels-wrap {
   display: flex;
   justify-content: space-between;
@@ -411,6 +432,14 @@ body {
   width: 70px; 
   text-align: center;
   line-height: 1.2;
+}
+.swal2-confirm, .swal2-cancel {
+  min-width: 100px !important; 
+  padding: 10px 24px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  margin: 0 !important;
 }
  .swal2-html-container h3 {
   font-size: var(--eval-title-size) !important;
@@ -611,6 +640,41 @@ body {
   margin: 10px 0 !important;
   box-sizing: border-box;
 }
+.swal2-popup {
+    width: 90% !important;
+    padding: 2em 1em !important;
+    border-radius: 20px !important;
+  }.swal2-popup.swal2-modal {
+    width: 92% !important; 
+  }
+
+  .swal2-title {
+    font-size: 1.2rem !important;
+    padding: 0 5px !important;
+  }
+
+  .swal2-actions {
+    display: flex !important;
+    flex-direction: row !important; 
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 1.5rem !important;
+  }
+
+  .swal2-styled {
+    flex: 1 !important; 
+    margin: 0 !important;
+    padding: 12px 0 !important;
+    font-size: 15px !important;
+    min-width: 0 !important; 
+  }
+  .swal2-confirm, .swal2-cancel {
+    flex: 1 !important; 
+    padding: 12px 5px !important; 
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
 }
 
 /* --- ส่วนควบคุมขนาดตัวอักษร Popup แบบประเมิน --- */
