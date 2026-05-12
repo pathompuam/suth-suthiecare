@@ -3,7 +3,7 @@ import { FiEye, FiEyeOff, FiUser, FiLock, FiMail, FiShield, FiCheckCircle } from
 import "./AddAdminModal.css";
 
 export default function AddAdminModal({ onClose, onSave, initialData, canViewPassword }) {
-  const currentUserStr = localStorage.getItem("suth_user");
+  const currentUserStr = sessionStorage.getItem("suth_user") || localStorage.getItem("suth_user");
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
   const currentRoleId = currentUser ? Number(currentUser.role_id) : 3;
 

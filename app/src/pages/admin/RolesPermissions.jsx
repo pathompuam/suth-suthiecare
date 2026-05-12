@@ -29,7 +29,7 @@ export default function RolesPermissions() {
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [search, setSearch] = useState("");
 
-  const currentUserStr = localStorage.getItem("suth_user");
+  const currentUserStr = sessionStorage.getItem("suth_user") || localStorage.getItem("suth_user");
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
   const currentRoleId = currentUser ? Number(currentUser.role_id) : 3;
 
