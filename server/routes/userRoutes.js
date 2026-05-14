@@ -11,6 +11,7 @@ const express  = require('express');
 const router   = express.Router();
 const bcrypt   = require('bcryptjs');          // ใช้ bcryptjs ตาม package.json
 const db       = require('../config/db');
+const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 
 const {
   encrypt,
@@ -30,7 +31,7 @@ function safeDecrypt(value) {
 //  1. ดึงข้อมูลผู้ใช้งานทั้งหมด  GET /users
 //     → แสดงข้อมูลแบบ mask (ปลอดภัย ไม่เปิดเผยข้อมูลจริง)
 // ============================================================
-router.get('/users', async (req, res) => {
+router.get('/users', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(
       'SELECT id, username, name, email, role_id, status, created_at FROM users ORDER BY id DESC'
@@ -59,7 +60,7 @@ router.get('/users', async (req, res) => {
 //  GET /users/:id/full  →  ดูข้อมูลจริง (สำหรับ admin)
 //  เพิ่มใหม่: ดูข้อมูลเต็มโดย decrypt ไม่ mask
 // ============================================================
-router.get('/users/:id/full', async (req, res) => {
+router.get('/users/:id/full', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const [rows] = await db.query(
       'SELECT id, username, name, email, role_id, status, created_at FROM users WHERE id = ?',
@@ -89,7 +90,7 @@ router.get('/users/:id/full', async (req, res) => {
 //     → encrypt name ก่อน INSERT
 //     → hash password ด้วย bcryptjs
 // ============================================================
-router.post('/users', async (req, res) => {
+router.post('/users', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { username, password, name, email, role_id, status } = req.body;
 
@@ -133,7 +134,7 @@ router.post('/users', async (req, res) => {
 //  3. แก้ไขข้อมูลผู้ใช้  PUT /users/:id
 //     → re-encrypt ทุกครั้งที่แก้ไข
 // ============================================================
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { username, name, email, role_id, status, password } = req.body;
 
@@ -174,7 +175,7 @@ router.put('/users/:id', async (req, res) => {
 // ============================================================
 //  4. ลบผู้ใช้  DELETE /users/:id
 // ============================================================
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
     await db.query('DELETE FROM users WHERE id=?', [req.params.id]);
     res.json({ message: 'ลบผู้ใช้สำเร็จ' });

@@ -23,4 +23,15 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+const verifyAdmin = (req, res, next) => {
+  if (req.user && (req.user.role_id === 1 || req.user.role_id === 2)) {
+    next();
+  } else {
+    return res.status(403).json({ 
+      success: false, 
+      message: 'คุณไม่มีสิทธิ์เข้าถึง (สำหรับ Admin เท่านั้น)' 
+    });
+  }
+};
+
+module.exports = { verifyToken, verifyAdmin };

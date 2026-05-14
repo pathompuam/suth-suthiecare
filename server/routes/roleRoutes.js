@@ -2,9 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db'); 
+const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 
 // 1. ดึงข้อมูล Role ทั้งหมด
-router.get('/roles', async (req, res) => {
+router.get('/roles', verifyToken, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT * FROM roles");
         res.json(rows);
@@ -14,7 +15,7 @@ router.get('/roles', async (req, res) => {
 });
 
 // 2. ดึง Permission ของแต่ละ Role
-router.get('/roles/:id/permissions', async (req, res) => {
+router.get('/roles/:id/permissions', verifyToken, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT * FROM permissions WHERE role_id = ?", [req.params.id]);
         res.json(rows);
@@ -24,7 +25,7 @@ router.get('/roles/:id/permissions', async (req, res) => {
 });
 
 // 3. บันทึก/อัปเดต Permission
-router.post('/roles/:id/permissions', async (req, res) => {
+router.post('/roles/:id/permissions', verifyToken, verifyAdmin, async (req, res) => {
     try {
         const roleId = req.params.id;
         const permissions = req.body;
@@ -44,7 +45,7 @@ router.post('/roles/:id/permissions', async (req, res) => {
 });
 
 // 4. สร้าง Role ใหม่
-router.post('/roles', async (req, res) => {
+router.post('/roles', verifyToken, verifyAdmin, async (req, res) => {
     try {
         const { name, description } = req.body;
         const [result] = await db.query("INSERT INTO roles (name, description) VALUES (?, ?)", [name, description || ""]);

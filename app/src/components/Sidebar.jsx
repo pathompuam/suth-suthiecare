@@ -122,7 +122,7 @@ const Sidebar = ({ activeKey = 'dashboard' }) => {
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const currentUserStr = localStorage.getItem("suth_user");
+  const currentUserStr = sessionStorage.getItem("suth_user") || localStorage.getItem("suth_user");
   const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
   const currentRoleId = currentUser ? Number(currentUser.role_id) : 3;
 
