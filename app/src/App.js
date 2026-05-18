@@ -3,9 +3,9 @@ import React, { lazy, useEffect, useState } from "react";
 
 import Login from "./pages/login/Login";
 import SutLanding2 from "./pages/sutlanding/SutLanding2";
+import ClinicManager from "./pages/admin/clinics/ClinicManager";
 
 // ✅ Lazy load ทุกหน้าที่เหลือ
-const Home = lazy(() => import("./pages/home/Home"));
 const AssessmentResult = lazy(() => import("./pages/result/AssessmentResult"));
 const Dashboard = lazy(() => import("./pages/admin/dashboard"));
 const FormManager = lazy(() => import("./pages/admin/forms/FormManager"));
@@ -103,7 +103,7 @@ function App() {
           <Route path="/" element={<SutLanding2 />} />
           <Route path="/login" element={<Login />} />
         
-          <Route path="/assessment" element={<Home />} />
+      
           <Route path="/assessment-result" element={<AssessmentResult />} />
           <Route path="/assessment/:id" element={<FormView />} />
           <Route path="/history" element={<HistorySearch />} />
@@ -119,6 +119,7 @@ function App() {
           <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
           <Route path="/admin/risk-cases" element={<AdminRoute><RiskCases /></AdminRoute>} />
           <Route path="/admin/banner" element={<AdminRoute><BannerManagement /></AdminRoute>} />
+          <Route path="/admin/clinics" element={<AdminRoute><ClinicManager /></AdminRoute>} />
         </Routes>
     </BrowserRouter>
   );

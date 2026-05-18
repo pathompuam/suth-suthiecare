@@ -74,6 +74,7 @@ export default function AddBannerModal({ onClose, onSave }) {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [isCropping, setIsCropping] = useState(false);
   const [filename, setFilename] = useState("");
+  const [link, setLink] = useState("");
 
   const onCropComplete = useCallback((_croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -105,7 +106,7 @@ export default function AddBannerModal({ onClose, onSave }) {
     if (!croppedImage) return alert("กรุณาเลือกและตัดรูปภาพก่อน");
 
     const finalFilename = filename ? filename.replace(/\.[^/.]+$/, ".jpg") : `banner_${Date.now()}.jpg`;
-    onSave({ image: croppedImage, filename: finalFilename });
+    onSave({ image: croppedImage, filename: finalFilename, link: link });
     onClose();
   };
 
@@ -155,15 +156,17 @@ export default function AddBannerModal({ onClose, onSave }) {
                       src={croppedImage}
                       alt="cropped"
                       style={{
-                        width: '100%',
-                        aspectRatio: '4 / 3',
+                        width: '420px',
+                        height: '315px',
                         objectFit: 'cover',
                         borderRadius: '12px',
                         border: '2px solid #4a9b9f',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        display: 'block',          
+                        marginBottom: '12px'
                       }}
                     />
-                    <button onClick={() => setIsCropping(true)} className="abm-btn-outline-sm" style={{ marginTop: '12px' }}>ตัดใหม่</button>
+                    <button onClick={() => setIsCropping(true)} className="abm-btn-outline-sm" style={{ marginTop: 0 }}>ตัดใหม่</button>
                   </div>
                   <div className="abm-input-group">
                     <label className="abm-label">ชื่อแบนเนอร์:</label>
@@ -173,6 +176,16 @@ export default function AddBannerModal({ onClose, onSave }) {
                       value={filename}
                       onChange={(e) => setFilename(e.target.value)}
                       placeholder="เช่น ภาพปก"
+                    />
+                  </div>
+                  <div className="abm-input-group">
+                    <label className="abm-label">ลิงก์ปลายทางเมื่อคลิกแบนเนอร์ (ถ้ามี):</label>
+                    <input
+                      type="url"
+                      className="abm-input"
+                      placeholder="https://example.com"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
                     />
                   </div>
                 </>

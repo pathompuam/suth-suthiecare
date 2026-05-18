@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import CaseTable from "../../components/case/CaseTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
-import { getForms, getChartData, getFormById, getDashboardSettings, saveDashboardSettings, getMasterCaseStats, getRecentCases } from "../../services/api";
+import { getForms, getChartData, getFormById, getDashboardSettings, saveDashboardSettings, getMasterCaseStats, getRecentCases, getActiveClinics } from "../../services/api";
 import SystemEvaluationWidget from "../../components/dashboard/SystemEvaluationWidget";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -88,6 +88,7 @@ const CustomDropdown = ({ icon: Icon, value, options, onChange, style, iconStyle
 export default function Dashboard() {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
+  const [clinics, setClinics] = useState([]);
 
   const [masterCaseStats, setMasterCaseStats] = useState({
     totalActive: 0, newToday: 0, highRisk: 0, closed: 0,
@@ -144,11 +145,13 @@ export default function Dashboard() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [formRes, settingsRes] = await Promise.all([
+        const [formRes, settingsRes, clinicRes] = await Promise.all([
           getForms("latest"),
-          getDashboardSettings()
+          getDashboardSettings(),
+          getActiveClinics()
         ]);
         setForms(formRes.data);
+        setClinics(clinicRes.data.data || []);
         const savedSettings = settingsRes.data;
 
         if (savedSettings?.last_selected_form_id) {

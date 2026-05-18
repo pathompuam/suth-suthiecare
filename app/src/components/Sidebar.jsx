@@ -93,6 +93,7 @@ const rawMenuItems = [
   // 🟠 หมวดจัดการระบบ
   { type: 'header', label: 'การจัดการ', key: 'header-setup' },
   { href: '/admin/forms', icon: <FormIcon />, label: 'จัดการฟอร์ม', key: 'forms' },
+  { href: '/admin/clinics', icon: <ContentIcon />, label: 'จัดการคลินิก', key: 'clinics' },
   { href: '/admin/banner', icon: <ContentIcon />, label: 'จัดการภาพแบนเนอร์', key: 'banner' },
   // 🟢 เพิ่มคู่มือการใช้งานตรงนี้ พร้อมกำหนด isExternal เป็น true
   { href: `${process.env.PUBLIC_URL}/docs/admin_manual.pdf`, icon: <FiBook size={22} />, label: 'คู่มือการใช้งาน', key: 'manual', isExternal: true },

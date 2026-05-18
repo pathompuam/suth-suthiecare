@@ -43,7 +43,6 @@
   flex-direction: column; 
   align-items: flex-start;
   padding: 25px 30px;
-  border-bottom: 2px dashed #fed7aa;
 }
 
 .abm-header h3 {
@@ -86,9 +85,9 @@
 }
 
 .abm-upload-area:hover {
-  border-color: #F47932; 
-  background: #fffaf7; 
-  color: #F47932;
+  border-color: #3b8286;  
+  background: #f0f7f7;    
+  color: #3b8286;
   transform: scale(1.02); 
 }
 
@@ -129,6 +128,17 @@
   border-color: #4a9b9f; 
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(74, 155, 159, 0.15); 
+}
+
+/* ควบคุมกลุ่มอินพุตแบนเนอร์ */
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #334155;
+  /* ฟอนต์จะถูกบังคับใช้ตามสไตล์ส่วนกลาง แต่อันนี้ใส่กำกับเพื่อความชัวร์ครับ */
+  font-family: 'Sarabun', sans-serif !important; 
+  font-size: 16px;
 }
 
 .abm-btn-outline-sm {
@@ -264,7 +274,7 @@
 @media (max-width: 768px) {
   .abm-card {
     width: 90% !important; 
-    max-width: 350px; 
+    max-width: 450px; 
     padding: 0; 
     border-radius: 16px; 
   }
@@ -273,6 +283,13 @@
   }
   .abm-body {
     padding: 15px 20px;
+  }
+  .abm-preview-section img {
+    width: 100% !important;       
+    max-width: 100% !important;    
+    height: auto !important;       
+    aspect-ratio: 4 / 3 !important; 
+    margin: 0 auto 12px auto !important; 
   }
   .abm-footer {
     padding: 20px 24px;

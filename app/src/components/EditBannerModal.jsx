@@ -34,6 +34,7 @@ const getCroppedImg = async (imageSrc, pixelCrop) => {
 export default function EditBannerModal({ banner, onClose, onSave }) {
   const [image, setImage] = useState(banner?.image || null); // รูปที่จะบันทึก (พรีวิวขวา)
   const [filename, setFilename] = useState(banner?.filename || "");
+  const [link, setLink] = useState(banner?.link || "");
   const [rawImage, setRawImage] = useState(null); // รูปต้นฉบับสำหรับครอป
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -55,10 +56,10 @@ export default function EditBannerModal({ banner, onClose, onSave }) {
     if (!croppedAreaPixels) return;
     try {
       const cropped = await getCroppedImg(rawImage, croppedAreaPixels);
-      setImage(cropped); 
+      setImage(cropped);
       setIsCropping(false);
       setRawImage(null);
-    } catch (e) { 
+    } catch (e) {
       alert("ไม่สามารถตัดรูปภาพได้ กรุณาลองใหม่อีกครั้งหรือใช้รูปภาพอื่น");
     }
   };
@@ -66,7 +67,7 @@ export default function EditBannerModal({ banner, onClose, onSave }) {
   const handleSave = () => {
     if (!image) return alert("กรุณาเลือกภาพแบนเนอร์");
     const finalFilename = filename.replace(/\.[^/.]+$/, ".jpg");
-    onSave({ ...banner, image, filename: finalFilename });
+    onSave({ ...banner, image, filename: finalFilename, link });
     onClose();
   };
 
@@ -88,7 +89,7 @@ export default function EditBannerModal({ banner, onClose, onSave }) {
           {isCropping ? (
             <div>
               <div style={{ position: "relative", width: "100%", height: "350px", background: "#1e293b", borderRadius: '12px', overflow: 'hidden', marginBottom: '15px' }}>
-                <Cropper image={rawImage} crop={crop} zoom={zoom} aspect={4/3} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
+                <Cropper image={rawImage} crop={crop} zoom={zoom} aspect={4 / 3} onCropChange={setCrop} onCropComplete={onCropComplete} onZoomChange={setZoom} />
               </div>
               <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(e.target.value)} style={{ width: '100%' }} />
             </div>
@@ -100,7 +101,7 @@ export default function EditBannerModal({ banner, onClose, onSave }) {
                   <div className="ebm-current-preview"><img src={banner.image} alt="current" /></div>
                 </div>
                 <div className="ebm-section">
-                  <label><FiPlus className="ebm-icon" /> ภาพใหม่ (ที่ตัดแล้ว)</label>
+                  <label><FiPlus className="ebm-icon" /> ภาพใหม่ </label>
                   <label className={`ebm-upload-area ${image !== banner.image ? "is-new" : ""}`}>
                     {image ? (
                       <div className="ebm-preview-wrapper">
@@ -115,6 +116,16 @@ export default function EditBannerModal({ banner, onClose, onSave }) {
               <div className="ebm-input-group">
                 <label><FiEdit3 className="ebm-icon" /> ชื่อไฟล์แบนเนอร์</label>
                 <input type="text" value={filename} onChange={(e) => setFilename(e.target.value)} className="ebm-input" />
+              </div>
+              <div className="ebm-input-group">
+                <label><FiEdit3 className="ebm-icon" /> ลิงก์ปลายทางเมื่อคลิกแบนเนอร์ (ถ้ามี)</label>
+                <input
+                  type="url"
+                  placeholder="https://example.com"
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  className="ebm-input" 
+                />
               </div>
             </>
           )}

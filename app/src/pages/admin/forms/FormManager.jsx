@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../../components/Sidebar';
-import { getForms, deleteFormInDb, renameFormInDb, updateFormImageOnly, updateFormStatus, updateFormClinicType, duplicateFormInDb } from '../../../services/api';
+import { getForms, deleteFormInDb, renameFormInDb, updateFormImageOnly, updateFormStatus, updateFormClinicType, duplicateFormInDb, getActiveClinics } from '../../../services/api';
 import './styles/FormManager.css';
 
 import {
@@ -12,13 +12,6 @@ import {
   FaExternalLinkAlt,
   FaTrashAlt
 } from 'react-icons/fa';
-
-const CLINIC_LABELS = {
-  general: { text: 'ทั่วไป', bg: '#f1f5f9', color: '#475569' },
-  teenager: { text: 'คลินิกวัยรุ่น', bg: '#e0f2fe', color: '#0284c7' },
-  behavior: { text: 'คลินิกLSM', bg: '#dcfce7', color: '#166534' },
-  sti: { text: 'คลินิกโรคติดต่อฯ', bg: '#fce7f3', color: '#be185d' }
-};
 
 // 🟢 Component สำหรับ Dropdown 
 const CustomDropdown = ({ icon: Icon, value, options, onChange, style, iconStyle, textStyle }) => {
@@ -90,6 +83,26 @@ const FormManager = () => {
   const [isClinicModalOpen, setIsClinicModalOpen] = useState(false);
   const [editingClinicForm, setEditingClinicForm] = useState({ id: null, clinic_type: 'general' });
 
+  // 🟢 เพิ่ม State สำหรับคลินิก
+  const [clinics, setClinics] = useState([]);
+  const clinicColors = ['#e0f2fe', '#dcfce7', '#fce7f3', '#fef3c7', '#e0e7ff', '#f3e8ff'];
+  const clinicTextColors = ['#0284c7', '#166534', '#be185d', '#d97706', '#4338ca', '#7e22ce'];
+
+  const getClinicLabel = (slug) => {
+    if (slug === 'general') return { text: 'ทั่วไป', bg: '#f1f5f9', color: '#475569' };
+    const clinic = clinics.find(c => c.slug === slug);
+    if (!clinic) return { text: slug, bg: '#f1f5f9', color: '#475569' };
+    
+    const index = clinics.findIndex(c => c.slug === slug);
+    const colorIndex = index % clinicColors.length;
+    
+    return {
+      text: clinic.name,
+      bg: clinicColors[colorIndex],
+      color: clinicTextColors[colorIndex]
+    };
+  };
+
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimer = useRef(null);
 
@@ -106,8 +119,12 @@ const FormManager = () => {
       if (sortBy === 'แก้ไขล่าสุด') sortParam = 'lastModified';
       if (sortBy === 'ชื่อ') sortParam = 'title';
 
-      const response = await getForms(sortParam);
-      setForms(response.data);
+      const [formRes, clinicRes] = await Promise.all([
+        getForms(sortParam),
+        getActiveClinics()
+      ]);
+      setForms(formRes.data);
+      setClinics(clinicRes.data.data || []);
     } catch (error) {
       setForms([]);
     } finally {
@@ -297,9 +314,7 @@ const FormManager = () => {
                 options={[
                   { value: 'all', label: `ทุกคลินิก (${forms.length})` },
                   { value: 'general', label: 'ทั่วไป' },
-                  { value: 'teenager', label: 'คลินิกวัยรุ่น' },
-                  { value: 'behavior', label: 'คลินิกLSM' },
-                  { value: 'sti', label: 'คลินิกโรคติดต่อฯ' }
+                  ...clinics.map(c => ({ value: c.slug, label: c.name }))
                 ]}
               />
 
@@ -362,7 +377,7 @@ const FormManager = () => {
             {filteredForms.map(form => {
               const currentStatus = form.status || 'draft';
               const clinicType = form.clinic_type || 'general';
-              const clinicInfo = CLINIC_LABELS[clinicType] || CLINIC_LABELS['general'];
+              const clinicInfo = getClinicLabel(clinicType);
 
               return (
                 <div
@@ -481,9 +496,9 @@ const FormManager = () => {
             <h3>เปลี่ยนประเภทคลินิก</h3>
             <select className="fm-modal-input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '15px', width: '100%', marginTop: '10px', boxSizing: 'border-box' }} value={editingClinicForm.clinic_type} onChange={(e) => setEditingClinicForm({ ...editingClinicForm, clinic_type: e.target.value })}>
               <option value="general">ทั่วไป (ใช้ร่วมกัน)</option>
-              <option value="teenager">คลินิกวัยรุ่น</option>
-              <option value="behavior">คลินิกLSM</option>
-              <option value="sti">คลินิกโรคติดต่อฯ</option>
+              {clinics.map(c => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
             </select>
             <div className="fm-modal-actions" style={{ marginTop: '20px' }}>
               <button className="fm-btn-cancel" onClick={() => setIsClinicModalOpen(false)}>ยกเลิก</button>

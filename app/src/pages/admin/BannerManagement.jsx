@@ -76,7 +76,8 @@ export default function BannerManagement() {
     try {
       await updateBannerImage(updatedBanner.id, {
         image: updatedBanner.image,
-        filename: updatedBanner.filename
+        filename: updatedBanner.filename,
+        link: updatedBanner.link || ""
       });
       setEditingBanner(null);
       await loadBanners();
