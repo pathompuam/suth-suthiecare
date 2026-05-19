@@ -278,45 +278,50 @@ function ClinicManagerContent() {
         </header>
 
         {isLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>กำลังโหลดข้อมูล...</div>
+          <div className="cm-loading-state">
+            <div className="cm-loading-spinner"></div>
+            <p>กำลังโหลดข้อมูล...</p>
+          </div>
         ) : (
           <div className="cm-table-container">
             <table className="cm-table">
               <thead>
                 <tr>
-                  <th>โลโก้</th>
-                  <th>รหัสอ้างอิง (Slug)</th>
-                  <th>ชื่อคลินิก</th>
-                  <th>สถานะ</th>
-                  <th>จัดการ</th>
+                  <th className="cm-col-logo">โลโก้</th>
+                  <th className="cm-col-slug">รหัสอ้างอิง (Slug)</th>
+                  <th className="cm-col-name">ชื่อคลินิก</th>
+                  <th className="cm-col-status">สถานะ</th>
+                  <th className="cm-col-actions">จัดการ</th>
                 </tr>
               </thead>
               <tbody>
                 {clinics && clinics.length > 0 ? clinics.map(clinic => (
                   <tr key={clinic.id}>
-                    <td>
+                    <td className="cm-col-logo">
                       {clinic.image ? (
                         <img src={clinic.image} alt={clinic.name} className="cm-clinic-logo" />
                       ) : (
                         <div className="cm-no-logo">ไม่มีรูป</div>
                       )}
                     </td>
-                    <td><span className="cm-slug">{clinic.slug}</span></td>
-                    <td className="cm-name">{clinic.name}</td>
-                    <td>
+                    <td className="cm-col-slug"><span className="cm-slug">{clinic.slug}</span></td>
+                    <td className="cm-col-name cm-name">{clinic.name}</td>
+                    <td className="cm-col-status">
                       {clinic.is_active ? (
                          <span className="cm-status active"><FaCheckCircle/> เปิดใช้งาน</span>
                       ) : (
                          <span className="cm-status inactive"><FaTimesCircle/> ปิดใช้งาน</span>
                       )}
                     </td>
-                    <td className="cm-actions">
-                      <button className="cm-btn-edit" onClick={() => handleOpenModal(clinic)} title="แก้ไข">
-                        <FaEdit />
-                      </button>
-                      <button className="cm-btn-delete" onClick={() => handleDelete(clinic.id, clinic.name)} title="ลบ">
-                        <FaTrash />
-                      </button>
+                    <td className="cm-col-actions">
+                      <div className="cm-actions">
+                        <button className="cm-btn-edit" onClick={() => handleOpenModal(clinic)} title="แก้ไข">
+                          <FaEdit />
+                        </button>
+                        <button className="cm-btn-delete" onClick={() => handleDelete(clinic.id, clinic.name)} title="ลบ">
+                          <FaTrash />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )) : (

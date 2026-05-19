@@ -79,6 +79,17 @@ const ContentIcon = () => (
   </svg>
 );
 
+const ClinicIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 21h18" />
+    <path d="M3 7v14" />
+    <path d="M21 7v14" />
+    <path d="M9 21V11h6v10" />
+    <path d="M2 14h20" />
+    <path d="M10 3h4v4h-4z" />
+  </svg>
+);
+
 const rawMenuItems = [
   // 🟢 หน้าหลัก
   { type: 'header', label: 'หน้าหลัก', key: 'header-overview' },
@@ -93,7 +104,7 @@ const rawMenuItems = [
   // 🟠 หมวดจัดการระบบ
   { type: 'header', label: 'การจัดการ', key: 'header-setup' },
   { href: '/admin/forms', icon: <FormIcon />, label: 'จัดการฟอร์ม', key: 'forms' },
-  { href: '/admin/clinics', icon: <ContentIcon />, label: 'จัดการคลินิก', key: 'clinics' },
+  { href: '/admin/clinics', icon: <ClinicIcon />, label: 'จัดการคลินิก', key: 'clinics' },
   { href: '/admin/banner', icon: <ContentIcon />, label: 'จัดการภาพแบนเนอร์', key: 'banner' },
   // 🟢 เพิ่มคู่มือการใช้งานตรงนี้ พร้อมกำหนด isExternal เป็น true
   { href: `${process.env.PUBLIC_URL}/docs/admin_manual.pdf`, icon: <FiBook size={22} />, label: 'คู่มือการใช้งาน', key: 'manual', isExternal: true },
@@ -182,6 +193,32 @@ const Sidebar = ({ activeKey = 'dashboard' }) => {
       }, 100);
     }
   }, [location.pathname, activeKey]);
+
+  // 🟢 จำตำแหน่งการ Scroll (แนวตั้ง) ของ Sidebar
+  useEffect(() => {
+    const handleScroll = () => {
+      if (menuRef.current && window.innerWidth > 768) {
+        sessionStorage.setItem('sidebarScrollPos', menuRef.current.scrollTop);
+      }
+    };
+
+    const menuEl = menuRef.current;
+    if (menuEl) {
+      if (window.innerWidth > 768) {
+        const savedPos = sessionStorage.getItem('sidebarScrollPos');
+        if (savedPos !== null) {
+          menuEl.scrollTop = parseInt(savedPos, 10);
+        }
+      }
+      menuEl.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (menuEl) {
+        menuEl.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
 
   const handleLogout = () => {
     MySwal.fire({
