@@ -16,7 +16,8 @@ import {
   getCaseLogs, addCaseLog, saveAppointment,
   getServices, createService, updateService, deleteService, getCaseAppointments, deleteCase,
   getStatusOptions, createStatusOption, deactivateStatusOption,
-  getFormById, getNoteTemplates, getForms, getMasterCasesById, closeMasterCase, updateClinicalData, generateSecureToken
+  getFormById, getNoteTemplates, getForms, getMasterCasesById, closeMasterCase, updateClinicalData, generateSecureToken, getStaffs,
+  createStaff, deleteStaff
 } from "../../services/api";
 
 import { FaRegEdit, FaHistory, FaTrashAlt, FaChevronDown, FaTimes, FaCog, FaShareSquare, FaArchive, FaPrint, FaRegCopy, FaClipboardList, FaCheckSquare, FaUserCircle } from "react-icons/fa";
@@ -49,22 +50,38 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
   const [savedStatus, setSavedStatus] = useState(data?.status || "");
   const [status, setStatus] = useState(savedStatus);
 
-  const [staffOptions, setStaffOptions] = useState(() => {
-    const saved = localStorage.getItem("staffOptions");
-    return saved
-      ? JSON.parse(saved)
-      : ["นพ.ใจดี รักษา", "อ.ดร.วิชัย สมศรี", "นักจิตวิทยา A", "พิมพ์ชื่อเอง..."];
-  });
+  const [staffOptions, setStaffOptions] = useState([]);
+  const fetchStaffs = async () => {
+    try {
+      const res = await getStaffs();
+      setStaffOptions(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffs();
+  }, []);
+
+  useEffect(() => {
+    if (data?.staff_id) {
+      setSelectedStaff(data.staff_id);
+    }
+  }, [data]);
+
   const [isManagingStaff, setIsManagingStaff] = useState(false);
   const [newStaffName, setNewStaffName] = useState("");
   const [selectedStaff, setSelectedStaff] = useState("");
+  const [savedStaff, setSavedStaff] = useState("");
   const [customStaff, setCustomStaff] = useState("");
 
   useEffect(() => {
-    if (staffOptions.length > 0 && !selectedStaff) {
-      setSelectedStaff(staffOptions[0]);
+    if (data?.staff_id) {
+      setSelectedStaff(data.staff_id);
+      setSavedStaff(data.staff_id);
     }
-  }, [staffOptions, selectedStaff]);
+  }, [data]);
 
   // save ทุกครั้งที่ staffOptions เปลี่ยน
   useEffect(() => {
@@ -73,7 +90,10 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
 
   // กัน selected ค้าง
   useEffect(() => {
-    if (selectedStaff && !staffOptions.includes(selectedStaff)) {
+    if (
+      selectedStaff &&
+      !staffOptions.some(s => s.id === selectedStaff)
+    ) {
       setSelectedStaff("");
     }
   }, [staffOptions, selectedStaff]);
@@ -139,19 +159,70 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
     return journeyResponses.find(r => r.id === viewingResponseId) || data;
   }, [viewingResponseId, data, journeyResponses]);
 
-  const handleAddStaff = () => {
+  const handleAddStaff = async () => {
     if (!newStaffName.trim()) return;
 
-    setStaffOptions(prev => [...prev, newStaffName]);
-    setNewStaffName("");
+    try {
+
+      await createStaff({
+        fullname: newStaffName
+      });
+
+      await fetchStaffs();
+
+      setNewStaffName("");
+
+      showToast("เพิ่มผู้รับผิดชอบสำเร็จ");
+
+    } catch (err) {
+      console.error(err);
+      showToast("เพิ่มไม่สำเร็จ");
+    }
   };
 
-  const handleDeleteStaff = (name) => {
-    setStaffOptions(prev => prev.filter(s => s !== name));
+  const handleDeleteStaff = async (id) => {
+    try {
+
+      await deleteStaff(id);
+
+      setStaffOptions(prev =>
+        prev.filter(s => s.id !== id)
+      );
+
+      if (selectedStaff === id) {
+        setSelectedStaff("");
+      }
+
+      showToast("ลบผู้รับผิดชอบสำเร็จ");
+
+    } catch (err) {
+      console.error(err);
+      showToast("ลบไม่สำเร็จ");
+    }
   };
 
   const leftPanelSummary = viewedResponse?.summary_data || {};
-  const leftPanelRawAnswers = useMemo(() => leftPanelSummary.raw_answers || {}, [leftPanelSummary.raw_answers]);
+  const leftPanelRawAnswers = useMemo(() => {
+    const foundStaff = staffOptions.find(s => s.id === selectedStaff);
+
+    return {
+      ...(leftPanelSummary.raw_answers || {}),
+      "สถานะเคส": status,
+      "ระดับความเสี่ยง": riskLevel,
+      "เจ้าหน้าที่": foundStaff ? foundStaff.fullname : (
+        staffOptions.find(s => s.id === data.staff_id)?.fullname || "เจ้าหน้าที่"
+      ),
+      "คลินิก": clinicType
+    };
+  }, [
+    leftPanelSummary.raw_answers,
+    status,
+    riskLevel,
+    clinicType,
+    selectedStaff,
+    staffOptions,
+    data.staff_id
+  ]);
   const leftPanelScoreResults = useMemo(() => leftPanelSummary.score_results || [], [leftPanelSummary.score_results]);
 
   useEffect(() => {
@@ -395,7 +466,14 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
     } finally { setIsDeleting(false); }
   };
 
-  const getCurrentStaff = () => selectedStaff === "พิมพ์ชื่อเอง..." ? customStaff || "เจ้าหน้าที่" : selectedStaff;
+  const getCurrentStaff = () => {
+    const found = staffOptions.find(
+      s => s.id === selectedStaff
+    );
+
+    return found?.fullname || "เจ้าหน้าที่";
+  };
+
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -405,6 +483,7 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
   const handleSaveAll = async () => {
     if (isAppointing && (!tempDate || !selectedServiceId)) { return Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาระบุวันที่และเลือกบริการนัดหมายให้ครบถ้วน' }); }
     const isStatusChanged = status !== savedStatus;
+    const isStaffChanged = selectedStaff !== savedStaff;
     const isOverallRiskChanged = riskLevel !== savedRisk;
     const hasImpression = clinicalImpression.trim() !== "";
     const hasNote = staffNote.trim() !== "";
@@ -423,7 +502,16 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
     });
     const isDynamicChanged = subRiskChanges.length > 0;
 
-    if (!isStatusChanged && !isOverallRiskChanged && !hasImpression && !hasNote && !isAppointing && !isDynamicChanged && !isClinicalDataChanged) {
+    if (
+      !isStatusChanged &&
+      !isStaffChanged &&
+      !isOverallRiskChanged &&
+      !hasImpression &&
+      !hasNote &&
+      !isAppointing &&
+      !isDynamicChanged &&
+      !isClinicalDataChanged
+    ) {
       return Swal.fire({ icon: 'info', title: 'ไม่มีการเปลี่ยนแปลง', text: 'ไม่มีข้อมูลใหม่ให้บันทึก' });
     }
 
@@ -432,10 +520,20 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
       const selectedOpt = statusOptions.find(opt => opt.name === status);
       const currentStatusId = (selectedOpt && selectedOpt.id !== 'legacy') ? selectedOpt.id : null;
       const targetMasterId = masterCaseInfo?.id || null;
+      
+      const staffIdToSend = selectedStaff ? Number(selectedStaff) : null;
 
       if (isStatusChanged || isOverallRiskChanged || hasImpression || isDynamicChanged || isClinicalDataChanged) {
         const logParts = [];
         if (isStatusChanged) logParts.push(`เปลี่ยนสถานะ: "${savedStatus || 'ไม่ได้ระบุ'}" ➔ "${status}"`);
+        if (isStaffChanged) {
+          const oldStaff = staffOptions.find(s => s.id === savedStaff);
+          const newStaff = staffOptions.find(s => s.id === selectedStaff);
+
+          logParts.push(
+            `เปลี่ยนผู้รับผิดชอบ: "${oldStaff?.fullname || '-'}" ➔ "${newStaff?.fullname || '-'}"`
+          );
+        }
         if (isOverallRiskChanged) logParts.push(`เปลี่ยนความเสี่ยงรวม: "${savedRisk}" ➔ "${riskLevel}"`);
         if (isDynamicChanged) logParts.push(...subRiskChanges);
 
@@ -450,9 +548,17 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
         if (hasImpression) logParts.push(`ข้อบ่งชี้ทางคลินิก: ${clinicalImpression.trim()}`);
         const logDetailString = logParts.join(' ⟡ ');
 
-        await addCaseLog(data.id, { master_case_id: targetMasterId, type: 'status', staff: staffName, detail: logDetailString, status, status_id: currentStatusId, risk_level: riskLevel });
-
+        await addCaseLog(data.id, {
+          master_case_id: targetMasterId,
+          type: 'status',
+          staff: getCurrentStaff(),
+          staff_id: selectedStaff ? Number(selectedStaff) : null,
+          detail: logDetailString,
+          status,
+          risk_level: riskLevel
+        });
         setSavedStatus(status);
+        setSavedStaff(selectedStaff);
         setSavedRisk(riskLevel);
         setSavedDynamicRisks(newSavedDynamicRisks);
         setSavedClinicalData(clinicalData);
@@ -478,7 +584,8 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
         await addCaseLog(data.id, {
           master_case_id: targetMasterId,
           type: 'note',
-          staff: staffName,
+          staff: getCurrentStaff(),
+          staff_id: selectedStaff ? Number(selectedStaff) : null,
           detail: detailWithSession,
           template_id: activeTemplate?.id || null,
           answers: activeTemplate ? JSON.stringify(templateAnswers) : null,
@@ -726,6 +833,8 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
                 scoreResults={leftPanelScoreResults} rawAnswers={leftPanelRawAnswers}
                 stripHtml={stripHtml} formatAnswer={formatAnswer}
                 formQuestions={formQuestions}
+                selectedStaff={selectedStaff}  
+                staffOptions={staffOptions}
               />
             )}
 
@@ -776,7 +885,8 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
                     handleEditService={handleEditService} handleDeleteService={handleDeleteService} newServiceName={newServiceName} setNewServiceName={setNewServiceName}
                     handleAddService={handleAddService} handleSaveAll={handleSaveAll} stripHtml={stripHtml}
                     clinicalData={clinicalData} setClinicalData={setClinicalData} templateSessionNo={templateSessionNo} setTemplateSessionNo={setTemplateSessionNo}
-                    groupedLogs={groupedLogs} staffOptions={staffOptions}
+                    groupedLogs={groupedLogs}
+                    staffOptions={staffOptions}
                     setStaffOptions={setStaffOptions}
                     isManagingStaff={isManagingStaff}
                     setIsManagingStaff={setIsManagingStaff}
@@ -786,7 +896,7 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
                     handleDeleteStaff={handleDeleteStaff}
                   />
                 )}
-                {activeTab === 'history' && (<CaseHistoryTab groupedLogs={groupedLogs} renderLogDetail={renderLogDetail} />)}
+                {activeTab === 'history' && (<CaseHistoryTab groupedLogs={groupedLogs} renderLogDetail={renderLogDetail} staffOptions={staffOptions} />)}
               </div>
             </div>
           </div>

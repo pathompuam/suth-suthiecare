@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import Cropper from "react-easy-crop";
-import { FiPlus } from "react-icons/fi";
+import { FiPlus, FiArrowLeft } from "react-icons/fi";
 import "./AddBannerModal.css";
 
 // ฟังก์ชันครอปรูปภาพ 
@@ -115,7 +115,14 @@ export default function AddBannerModal({ onClose, onSave }) {
       <div className="abm-card">
         <div className="abm-header">
           <h3>เพิ่มแบนเนอร์ใหม่</h3>
-          <p>{isCropping ? "เลื่อนกรอบเพื่อจัดตำแหน่งรูปภาพ (ขนาด1024 x 768 px)" : "ระบุรายละเอียดแบนเนอร์"}</p>
+          <p>
+            {isCropping
+              ? "เลื่อนกรอบเพื่อจัดตำแหน่งรูปภาพ (ขนาด 1024 x 768px)"
+              : !croppedImage
+                ? "คลิกเพื่อเลือกภาพแบนเนอร์"
+                : "ระบุรายละเอียดแบนเนอร์"
+            }
+          </p>
           <button className="abm-close-btn-custom" onClick={onClose} aria-label="Close">
             <span className="close-cross"></span>
           </button>
@@ -160,9 +167,9 @@ export default function AddBannerModal({ onClose, onSave }) {
                         height: '315px',
                         objectFit: 'cover',
                         borderRadius: '12px',
-                        border: '2px solid #4a9b9f',
+                        border: '2px solid #2563eb',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        display: 'block',          
+                        display: 'block',
                         marginBottom: '12px'
                       }}
                     />
@@ -195,6 +202,23 @@ export default function AddBannerModal({ onClose, onSave }) {
         </div>
 
         <div className="abm-footer">
+          {isCropping && (
+            <button
+              className="abm-btn-outline-sm"
+              onClick={() => {
+                setImage(null);
+                setIsCropping(false);
+              }}
+              style={{ 
+                marginRight: 'auto',
+                display: 'inline-flex',    
+                alignItems: 'center',      
+                gap: '6px'                 
+              }}
+            >
+              <FiArrowLeft size={16} /> ย้อนกลับ 
+            </button>
+          )}
           <button className="abm-btn-cancel" onClick={onClose}>ยกเลิก</button>
           {isCropping ? (
             <button className="abm-btn-save" onClick={handleConfirmCrop}>ยืนยันการตัดรูป</button>

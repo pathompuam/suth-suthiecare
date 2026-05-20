@@ -69,65 +69,77 @@ export default function CaseActionTab(props) {
       <div className="cdm-management-box" style={{ opacity: masterCaseInfo?.status === 'Closed' ? 0.5 : 1, pointerEvents: masterCaseInfo?.status === 'Closed' ? 'none' : 'auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-  <div className="cdm-status-header-row">
-    <label className="cdm-form-label">ผู้รับผิดชอบ</label>
-    <button type="button" className="cdm-text-btn-manage" onClick={() => setIsManagingStaff(!isManagingStaff)}>
-      <FaCog /> {isManagingStaff ? "ปิด" : "จัดการ"}
-    </button>
-  </div>
+            <div className="cdm-status-header-row">
+              <label className="cdm-form-label">ผู้รับผิดชอบ</label>
+              <button type="button" className="cdm-text-btn-manage" onClick={() => setIsManagingStaff(!isManagingStaff)}>
+                <FaCog /> {isManagingStaff ? "ปิด" : "จัดการ"}
+              </button>
+            </div>
 
-  {!isManagingStaff ? (
-    <select className="cdm-form-input" value={selectedStaff} onChange={(e) => setSelectedStaff(e.target.value)}>
-      {staffOptions.length === 0 && <option value="">ไม่มีข้อมูล</option>}
-      {staffOptions.map((opt, i) => (
-        <option key={i} value={opt}>{opt}</option>
-      ))}
-    </select>
-  ) : (
-    <div className="cdm-service-manage-box">
-      <div className="cdm-service-list">
-        {staffOptions.map((opt, i) => (
-          <div key={i} className="cdm-service-item">
-            <span>{opt}</span>
-            <button
-              type="button"
-              className="cdm-action-icon delete"
-              onClick={() => {
-  Swal.fire({
-    title: 'ยืนยันการลบ?',
-    text: `ต้องการลบ ${opt} ใช่หรือไม่`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'ลบ',
-    cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: '#ef4444'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      handleDeleteStaff(opt);
-    }
-  });
-}}
-            >
-              <FaTrashAlt />
-            </button>
+            {!isManagingStaff ? (
+              <select
+                className="cdm-form-input"
+                value={selectedStaff || ""}
+                onChange={(e) => {
+                  setSelectedStaff(Number(e.target.value));
+                }}
+              >
+                <option value="">เลือกผู้รับผิดชอบ</option>
+
+                {staffOptions.map((staff) => (
+                  <option
+                    key={staff.id}
+                    value={staff.id}
+                  >
+                    {staff.fullname}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="cdm-service-manage-box">
+                <div className="cdm-service-list">
+                  {staffOptions.map((opt, i) => (
+                    <div key={i} className="cdm-service-item">
+                      <span>{opt.fullname}</span>
+                      <button
+                        type="button"
+                        className="cdm-action-icon delete"
+                        onClick={() => {
+                          Swal.fire({
+                            title: 'ยืนยันการลบ?',
+                            text: `ต้องการลบ ${opt.fullname} ใช่หรือไม่`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'ลบ',
+                            cancelButtonText: 'ยกเลิก',
+                            confirmButtonColor: '#ef4444'
+                          }).then((result) => {
+                            if (result.isConfirmed) {
+                              handleDeleteStaff(opt.id);
+                            }
+                          });
+                        }}
+                      >
+                        <FaTrashAlt />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="cdm-service-add-row">
+                  <input
+                    type="text"
+                    value={newStaffName}
+                    onChange={(e) => setNewStaffName(e.target.value)}
+                    placeholder="เพิ่มผู้รับผิดชอบ..."
+                  />
+                  <button type="button" onClick={handleAddStaff}>
+                    <FaPlus />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      <div className="cdm-service-add-row">
-        <input
-          type="text"
-          value={newStaffName}
-          onChange={(e) => setNewStaffName(e.target.value)}
-          placeholder="เพิ่มผู้รับผิดชอบ..."
-        />
-        <button type="button" onClick={handleAddStaff}>
-          <FaPlus />
-        </button>
-      </div>
-    </div>
-  )}
-</div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div className="cdm-status-header-row">
               <label className="cdm-form-label">สถานะปัจจุบัน</label>

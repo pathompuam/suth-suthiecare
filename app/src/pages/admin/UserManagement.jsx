@@ -4,10 +4,9 @@ import { getUsers, createUser, updateUser, deleteUser, getRolePermissions } from
 import Sidebar from "../../components/Sidebar";
 import "./UserManagement.css";
 import AddAdminModal from "../../components/AddAdminModal";
-// 🟢 เพิ่ม FiChevronLeft, FiChevronRight
-import { FiSearch, FiPlus, FiEdit2, FiTrash2, FiLayers, FiChevronDown, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiSearch, FiPlus, FiLayers, FiChevronDown, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
-// 🟢 Import SweetAlert2
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
@@ -262,11 +261,11 @@ export default function UserManagement() {
                         <td style={{ textAlign: 'center' }}><span className={`sum-status ${user.status === "active" ? "sum-active" : "sum-inactive"}`}>{user.status === 'active' ? 'ใช้งานปกติ' : 'ระงับการใช้งาน'}</span></td>
                         <td className="sum-actions" >
                           {canEdit ? (
-                            <button className="sum-edit" onClick={() => { setEditingUser(user); setShowModal(true); }}><FiEdit2 /></button>
+                            <button className="sum-edit" onClick={() => { setEditingUser(user); setShowModal(true); }}><FaEdit /></button>
                           ) : (
                             <span className="no-permission" style={{ fontSize: "13px", color: "#94a3b8" }}>ไม่มีสิทธิ์</span>
                           )}
-                          {canDelete && <button className="sum-delete" onClick={() => handleDelete(user.id, user.name)}><FiTrash2 /></button>}
+                          {canDelete && <button className="sum-delete" onClick={() => handleDelete(user.id, user.name)}><FaTrash /></button>}
                         </td>
                       </tr>
                     )

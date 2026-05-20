@@ -25,8 +25,9 @@
   padding: 25px 35px;         
   border-radius: 12px;        
   margin-bottom: 25px;
-   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   border: none;
+  border-left: 6px solid #F47932;
 }
 
 .bm-title {
@@ -36,7 +37,7 @@
 }
 
 .bm-add-btn {
-  background: #4a9b9f;
+  background: #F47932;
   color: white;
   border: none;
   padding: 12px 28px;
@@ -48,17 +49,60 @@
   cursor: pointer;
   font-size: 15px;
   transition: all 0.3s ease; 
-  box-shadow: 0 4px 15px rgba(74, 155, 159, 0.3);
+  box-shadow:0 4px 15px rgba(244, 121, 50, 0.3);
 }
 
 .bm-add-btn:hover {
-  background: #3a8589;
+  background: #ea580c;
   transform: translateY(-2px); 
-  box-shadow: 0 8px 25px rgba(74, 155, 159, 0.45);
+  box-shadow: 0 8px 25px rgba(244, 121, 50, 0.4);
+}
+
+.bm-header-hint {
+  margin: 6px 0 0 0 !important;
+  font-size: 13.5px !important;
+  color: #64748b;
+  font-weight: 500;
+}
+/* ============================================================
+   SYSTEM ANIMATIONS & LOADERS (สปินเนอร์หมุนโหลดข้อมูล)
+   ============================================================ */
+.bm-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  width: 100%;
+}
+.bm-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f1f5f9;         
+  border-top: 4px solid #F47932;      
+  border-radius: 50%;
+  animation: bm-spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  margin-bottom: 20px;
+}
+@keyframes bm-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.bm-loading-state p {
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  animation: bm-pulseText 1.5s ease-in-out infinite;
+}
+@keyframes bm-pulseText {
+  0%, 100% { opacity: 1; }   
+  50% { opacity: 0.5; }      
 }
 
 /* =================================================
-   🟢 Layout 2 คอลัมน์ (ตาราง ซ้าย - พรีวิว ขวา)
+    Layout 2 คอลัมน์ (ตาราง ซ้าย - พรีวิว ขวา)
 ================================================= */
 .bm-content-grid {
   display: flex;
@@ -236,7 +280,7 @@ tr:hover .bm-empty-icon {
   padding: 18px 20px;
   font-size: 15px;
   text-align: left;
-  border-right: 1px solid rgba(255, 255, 255, 0.2); 
+  border: none !important;
 }
 
 .bm-table-card thead tr th:first-child { border-top-left-radius: 12px; }
@@ -248,8 +292,8 @@ tr:hover .bm-empty-icon {
   padding: 16px 20px;
   text-align: left;
   border-bottom: 1px solid #e2e8f0; 
-  border-right: 1px solid #e2e8f0;  
-  color: #475569;
+  border-right: none !important;  
+  color: #94a3b8;;
   vertical-align: middle;
   background-color: #ffffff; 
 }
@@ -296,14 +340,19 @@ tr:hover .bm-empty-icon {
 
 .bm-table-card .drag-handle {
   cursor: grab;
-  font-size: 22px;
-  color: #cbd5e1;
+  font-size: 18px;
+  color: #94a3b8;
   padding: 6px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   background: transparent;
 }
-.bm-table-card .drag-handle:active { cursor: grabbing; }
+.bm-table-card .drag-handle:hover {
+  color: #475569;
+  background-color: #f1f5f9; 
+}
+.bm-table-card .drag-handle:active { cursor: grabbing; color: #2563eb !important; background-color: #eff6ff;}
 
 .bm-table-card .action-cell,
 .bm-table-card .bn-action-cell {
@@ -313,7 +362,31 @@ tr:hover .bm-empty-icon {
   border-right: none !important; 
   white-space: nowrap !important;
 }
+.bn-btn-edit, .bn-btn-delete {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.bn-btn-edit {
+  color: #64748b;
+  background-color: #f8fafc;
+}
+
+.bn-btn-edit:hover {
+  background: #eff6ff !important;    
+  color: #2563eb !important;         
+  border-color: #2563eb !important;  
+  transform: translateY(-2px);
+}
 .bm-table-card .bn-edit-btn, 
 .bm-table-card .bn-delete-btn {
   width: 38px !important;
@@ -339,7 +412,12 @@ tr:hover .bm-empty-icon {
   height: 18px !important;
 }
 
-.bm-table-card .bn-edit-btn:hover { background: #f0f9f9 !important; color: #4a9b9f !important; border-color: #4a9b9f !important; transform: translateY(-2px) !important; }
+.bm-table-card .bn-edit-btn:hover { 
+  background: #eff6ff !important;     
+  color: #2563eb !important;          
+  border-color: #2563eb !important;   
+  transform: translateY(-2px) !important; 
+}
 .bm-table-card .bn-delete-btn:hover { background: #fef2f2 !important; color: #ef4444 !important; border-color: #fee2e2 !important; transform: translateY(-2px) !important; }
 
 

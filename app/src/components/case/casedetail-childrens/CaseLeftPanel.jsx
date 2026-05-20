@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import { FaStream, FaChartBar, FaClipboardList, FaRegFolderOpen, FaFileAlt, FaChevronDown } from "react-icons/fa";
 
-export default function CaseLeftPanel({ 
+export default function CaseLeftPanel({
   leftViewMode, setLeftViewMode,
   viewingResponseId, setViewingResponseId,
-  journeyResponses, data, 
+  journeyResponses, data,
   scoreResults, rawAnswers, stripHtml, formatAnswer,
-  formQuestions = [] 
+  formQuestions = [],
+  selectedStaff,
+  staffOptions
 }) {
+
+  const foundStaff = staffOptions.find(s => s.id === Number(selectedStaff));
 
   // 🟢 State สำหรับควบคุมการย่อ-ขยาย (ค่าเริ่มต้นให้เปิดไว้ทั้งคู่)
   const [isScoreOpen, setIsScoreOpen] = useState(true);
@@ -15,22 +19,22 @@ export default function CaseLeftPanel({
 
   // 🟢 Mapping ระดับความเสี่ยง → สี
   const caseRiskColors = {
-    "น้ำหนักน้อย / ผอม": { bg: '#d0f0fd', color: '#0c4a6e' },          
-    "ปกติ (สุขภาพดี)": { bg: '#ecfdf5', color: '#065f46' },                       
-    "ท้วม / โรคอ้วนระดับ 1": { bg: '#fef9c3', color: '#713f12' },      
-    "อ้วน / โรคอ้วนระดับ 2": { bg: '#fff7ed', color: '#7c2d12' },      
-    "อ้วนมาก / โรคอ้วนระดับ 3": { bg: '#fef2f2', color: '#7f1d1d' }, 
-    "ปกติ / ไม่มีอาการซึมเศร้า": { bg: '#ecfdf5', color: '#065f46' }, 
-    "มีอาการซึมเศร้าระดับน้อย": { bg: '#fef9c3', color: '#713f12' }, 
-    "มีอาการซึมเศร้าระดับปานกลาง": { bg: '#fff7ed', color: '#7c2d12' }, 
-    "มีอาการซึมเศร้าระดับรุนแรง": { bg: '#fef2f2', color: '#7f1d1d' } 
+    "น้ำหนักน้อย / ผอม": { bg: '#d0f0fd', color: '#0c4a6e' },
+    "ปกติ (สุขภาพดี)": { bg: '#ecfdf5', color: '#065f46' },
+    "ท้วม / โรคอ้วนระดับ 1": { bg: '#fef9c3', color: '#713f12' },
+    "อ้วน / โรคอ้วนระดับ 2": { bg: '#fff7ed', color: '#7c2d12' },
+    "อ้วนมาก / โรคอ้วนระดับ 3": { bg: '#fef2f2', color: '#7f1d1d' },
+    "ปกติ / ไม่มีอาการซึมเศร้า": { bg: '#ecfdf5', color: '#065f46' },
+    "มีอาการซึมเศร้าระดับน้อย": { bg: '#fef9c3', color: '#713f12' },
+    "มีอาการซึมเศร้าระดับปานกลาง": { bg: '#fff7ed', color: '#7c2d12' },
+    "มีอาการซึมเศร้าระดับรุนแรง": { bg: '#fef2f2', color: '#7f1d1d' }
   };
 
 
   // 🟢 ฟังก์ชันวาดตารางสำหรับคำตอบที่เป็น Object (เช่น Grid)
   const renderAnswerContent = (qTitle, ans) => {
     if (ans === undefined || ans === null || ans === '') return <p>-</p>;
-    
+
     // ถ้าคำตอบเป็น Object (เช่น ข้อมูลตาราง) ให้วาดเป็น Table แทน Text
     if (typeof ans === 'object' && !Array.isArray(ans)) {
       const qDef = formQuestions.find(q => stripHtml(q.title) === stripHtml(qTitle));
@@ -60,7 +64,7 @@ export default function CaseLeftPanel({
         </div>
       );
     }
-    
+
     // ถ้าเป็นข้อมูลข้อความธรรมดา (Text/Array)
     return <p>{formatAnswer(ans)}</p>;
   };
@@ -70,15 +74,15 @@ export default function CaseLeftPanel({
 
       {/* 🟢 Tabs สลับโหมด */}
       <div className="cdm-panel-tabs" style={{ marginBottom: '20px' }}>
-        <button 
-          className={`cdm-tab-btn ${leftViewMode === 'profile' ? 'active' : ''}`} 
+        <button
+          className={`cdm-tab-btn ${leftViewMode === 'profile' ? 'active' : ''}`}
           onClick={() => setLeftViewMode('profile')}
           style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '8px' }}
         >
           <FaRegFolderOpen /> ประวัติการทำฟอร์ม
         </button>
-        <button 
-          className={`cdm-tab-btn ${leftViewMode === 'details' ? 'active' : ''}`} 
+        <button
+          className={`cdm-tab-btn ${leftViewMode === 'details' ? 'active' : ''}`}
           onClick={() => setLeftViewMode('details')}
           style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '8px' }}
         >
@@ -87,27 +91,27 @@ export default function CaseLeftPanel({
       </div>
 
       <div className="cdm-left-content-anim">
-        
+
         {/* 🟢 โหมด: แฟ้มประวัติ (Profile Timeline) */}
         {leftViewMode === 'profile' && (
           <div>
             <h3 className="cdm-section-title">
               <FaStream /> ประวัติการทำแบบฟอร์ม/ประเมิน
             </h3>
-            
+
             {journeyResponses && journeyResponses.length > 0 ? (
               <div className="cdm-timeline-list">
                 {journeyResponses.map((r, index) => {
                   const isCurrent = r.id === data.id;
                   const isViewing = r.id === viewingResponseId;
                   const d = new Date(r.submitted_at);
-                  const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}`;
-                  
+                  const dateStr = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear() + 543}`;
+
                   // กำหนดสีป้ายความเสี่ยง ใช้ mapping ของระดับความเสี่ยง
                   const riskInfo = caseRiskColors[r.risk_level] || { bg: '#f8fafc', color: '#5f6160ff' }; // default เทา
 
                   return (
-                    <div key={r.id} 
+                    <div key={r.id}
                       className={`cdm-timeline-card ${isViewing ? 'active' : ''}`}
                       onClick={() => {
                         setViewingResponseId(r.id);
@@ -147,8 +151,8 @@ export default function CaseLeftPanel({
             {/* Dropdown สลับดูคำตอบฟอร์มอื่น (กรณีไม่ได้กดจาก Timeline) */}
             <div className="cdm-form-select-box">
               <label className="cdm-form-label">กำลังดูข้อมูลจากฟอร์ม:</label>
-              <select 
-                className="cdm-form-input" 
+              <select
+                className="cdm-form-input"
                 value={viewingResponseId}
                 onChange={(e) => setViewingResponseId(Number(e.target.value))}
               >
@@ -161,14 +165,18 @@ export default function CaseLeftPanel({
                 ) : (
                   <option value={data.id}>{data.form_title || 'แบบประเมินปัจจุบัน'}</option>
                 )}
+
+                <strong>เจ้าหน้าที่ผู้รับผิดชอบ:</strong>
+                <p>{foundStaff ? foundStaff.fullname : "ยังไม่ระบุ"}</p>
+                
               </select>
             </div>
 
             {/* 🟢 ส่วนของ "ผลประเมินของการตอบครั้งนี้" (พับได้) */}
             {scoreResults && scoreResults.length > 0 && (
               <div style={{ marginBottom: '24px' }}>
-                <h3 
-                  className="cdm-section-title cdm-collapse-header" 
+                <h3
+                  className="cdm-section-title cdm-collapse-header"
                   onClick={() => setIsScoreOpen(!isScoreOpen)}
                 >
                   <FaChartBar color="#f59e0b" /> ผลประเมินระบบ
@@ -194,7 +202,7 @@ export default function CaseLeftPanel({
 
             {/* 🟢 ส่วนของ "ข้อมูลคำตอบ" (พับได้) */}
             <div>
-              <h3 
+              <h3
                 className="cdm-section-title cdm-collapse-header"
                 onClick={() => setIsAnswersOpen(!isAnswersOpen)}
               >
@@ -218,7 +226,7 @@ export default function CaseLeftPanel({
                 </div>
               )}
             </div>
-            
+
           </div>
         )}
 

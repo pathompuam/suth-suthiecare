@@ -1,7 +1,8 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { FiEdit2, FiTrash2, FiMenu } from "react-icons/fi"; 
+import {  FiMenu } from "react-icons/fi"; 
+import { FaEdit, FaTrash, FaGripVertical } from "react-icons/fa";
 
 export default function SortableBannerRow({ banner, onDelete, onEdit }) {
   const {
@@ -31,9 +32,9 @@ export default function SortableBannerRow({ banner, onDelete, onEdit }) {
           className="drag-handle"
           {...attributes}
           {...listeners}
-          title="ลากเพื่อเปลี่ยนลำดับ"
+          title="ลากเพื่อเรียงลำดับ"
         >
-          <FiMenu /> 
+          <FaGripVertical /> 
         </span>
 
         <img
@@ -49,11 +50,11 @@ export default function SortableBannerRow({ banner, onDelete, onEdit }) {
 
       <td className="bn-action-cell">
           <button className="bn-edit-btn" onClick={onEdit} title="แก้ไข">
-            <FiEdit2 />
+            <FaEdit />
           </button>
 
           <button className="bn-delete-btn" onClick={() => onDelete(banner.id)} title="ลบ" >
-            <FiTrash2 />
+            <FaTrash />
           </button>
       </td>
     </tr>

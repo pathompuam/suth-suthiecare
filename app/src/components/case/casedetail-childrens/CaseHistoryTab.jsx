@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FaExchangeAlt, FaStickyNote, FaUserCircle, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { FiCalendar } from "react-icons/fi";
 
-export default function CaseHistoryTab({ groupedLogs, renderLogDetail }) {
+export default function CaseHistoryTab({ groupedLogs, renderLogDetail, staffOptions }) {
  
   const [expandedDates, setExpandedDates] = useState(() => {
     const dates = Object.keys(groupedLogs);
@@ -70,7 +70,7 @@ export default function CaseHistoryTab({ groupedLogs, renderLogDetail }) {
                               <span className="cdm-time">{log.date.toLocaleTimeString("th-TH", { hour: '2-digit', minute: '2-digit' })} น.</span>
                               <span className={`cdm-type-badge ${dotClass}`}>{typeLabel}</span>
                             </div>
-                            <span className="cdm-hist-staff-badge"><FaUserCircle /> {log.staff}</span>
+                            <span className="cdm-hist-staff-badge"><FaUserCircle /> {staffOptions?.find(s => s.id === log.staff_id)?.fullname || log.staff}</span>
                           </div>
                           <div className="cdm-hist-card-body">
                             <div className={`cdm-log-content-wrapper ${isLogExpanded ? 'expanded' : 'collapsed'}`}>

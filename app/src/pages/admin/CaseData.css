@@ -108,7 +108,387 @@
 .scd-date-text-display { width: 100%; border: none; background: transparent; font-size: 14px; color: #334155; padding: 0 8px; text-align: center; cursor: pointer; outline: none; font-family: inherit; font-weight: 500; }
 .scd-date-native-hidden { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .scd-date-separator { font-size: 13px; color: #94a3b8; font-weight: bold; margin: 0 4px; }
+/* =========================
+   FONT
+========================= */
 
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+
+/* =========================
+   BUTTON GROUP
+========================= */
+
+.scd-form-status-group{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* =========================
+   ADD BUTTON
+========================= */
+
+.scd-add-walkin-btn{
+  height:42px;
+  padding:0 16px;
+
+  border:none;
+  border-radius:12px;
+
+  background:#F47932;
+
+  color:#fff;
+
+  font-family:'Sarabun',sans-serif;
+  font-size:14px;
+  font-weight:600;
+
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  cursor:pointer;
+
+  transition:.18s ease;
+}
+
+.scd-add-walkin-btn:hover{
+  background:#F47932;
+}
+
+/* =========================
+   OVERLAY
+========================= */
+
+.scd-modal-overlay{
+  position:fixed;
+  inset:0;
+
+  background:rgba(15,23,42,.42);
+
+  backdrop-filter:blur(6px);
+
+  z-index:9999;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:20px;
+}
+
+/* =========================
+   MODAL
+========================= */
+
+.scd-create-case-modal{
+  width:100%;
+  max-width:860px;
+
+  background:#f8fafc;
+
+  border-radius:20px;
+
+  overflow:hidden;
+
+  box-shadow:
+    0 20px 50px rgba(0,0,0,.18);
+
+  font-family:'Sarabun',sans-serif;
+
+  animation:modalEnter .18s ease;
+}
+
+@keyframes modalEnter{
+  from{
+    opacity:0;
+    transform:translateY(8px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.scd-create-case-header{
+  padding:22px 26px;
+
+  background:#F47932;
+
+  color:#fff;
+
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+}
+
+.scd-create-case-header h2{
+  margin:0;
+
+  font-size:22px;
+  font-weight:700;
+}
+
+.scd-create-case-header p{
+  margin-top:4px;
+
+  font-size:13px;
+  color:rgba(255,255,255,.82);
+}
+.scd-close-btn{
+  width:50px;
+  height:50px;
+
+  border:none;
+  border-radius:14px;
+
+  background:rgba(255,255,255,.18);
+  backdrop-filter:blur(10px);
+
+  color:#ffffff;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  cursor:pointer;
+
+  transition:all .18s ease;
+}
+
+.scd-close-btn svg{
+  width:26px;
+  height:26px;
+
+  stroke-width:3.2;
+}
+
+.scd-close-btn:hover{
+  background:#ffffff;
+  color:#F47932;
+
+  transform:translateY(-1px);
+}
+/* =========================
+   BODY
+========================= */
+
+.scd-create-case-body{
+  padding:22px;
+
+  max-height:70vh;
+  overflow:auto;
+}
+
+/* =========================
+   SECTION
+========================= */
+
+.scd-form-section{
+  background:#fff;
+
+  border:1px solid #e2e8f0;
+
+  border-radius:16px;
+
+  padding:20px;
+
+  margin-bottom:16px;
+}
+
+.scd-section-title{
+  font-size:15px;
+  font-weight:700;
+
+  color:#0f172a;
+
+  margin-bottom:18px;
+}
+
+/* =========================
+   GRID
+========================= */
+
+.scd-form-grid{
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,minmax(0,1fr));
+
+  gap:16px 20px;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.scd-form-group{
+  display:flex;
+  flex-direction:column;
+
+  gap:6px;
+}
+
+.scd-form-group label{
+  font-size:13px;
+  font-weight:600;
+
+  color:#334155;
+}
+
+/* =========================
+   INPUT
+========================= */
+
+.scd-form-group input,
+.scd-form-group select,
+.scd-form-group textarea{
+  width:100%;
+
+  height:44px;
+
+  border:1px solid #cbd5e1;
+
+  background:#fff;
+
+  border-radius:12px;
+
+  padding:0 14px;
+
+  font-family:'Sarabun',sans-serif;
+  font-size:14px;
+  font-weight:500;
+
+  color:#0f172a;
+
+  outline:none;
+
+  transition:.18s ease;
+}
+
+.scd-form-group textarea{
+  min-height:120px;
+
+  padding:14px;
+
+  resize:vertical;
+}
+
+.scd-form-group input:focus,
+.scd-form-group select:focus,
+.scd-form-group textarea:focus{
+  border-color:#F47932;
+
+  box-shadow:
+    0 0 0 3px rgba(37,99,235,.08);
+}
+
+/* =========================
+   FULL WIDTH
+========================= */
+
+.scd-full-width{
+  grid-column:1 / -1;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.scd-create-case-footer{
+  padding:18px 22px;
+
+  background:#fff;
+
+  border-top:1px solid #e2e8f0;
+
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.scd-cancel-btn{
+  height:42px;
+  padding:0 18px;
+
+  border:none;
+  border-radius:12px;
+
+  background:#e2e8f0;
+
+  color:#334155;
+
+  font-family:'Sarabun',sans-serif;
+  font-size:14px;
+  font-weight:600;
+
+  cursor:pointer;
+}
+
+.scd-cancel-btn:hover{
+  background:#cbd5e1;
+}
+
+.scd-save-btn{
+  height:42px;
+  padding:0 18px;
+
+  border:none;
+  border-radius:12px;
+
+  background:#F47932;
+
+  color:#fff;
+
+  font-family:'Sarabun',sans-serif;
+  font-size:14px;
+  font-weight:600;
+
+  cursor:pointer;
+
+  transition:.18s ease;
+}
+
+.scd-save-btn:hover{
+  background:#F47932;
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+.scd-create-case-body::-webkit-scrollbar{
+  width:8px;
+}
+
+.scd-create-case-body::-webkit-scrollbar-thumb{
+  background:#cbd5e1;
+  border-radius:999px;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width:768px){
+
+  .scd-create-case-modal{
+    max-width:100%;
+  }
+
+  .scd-form-grid{
+    grid-template-columns:1fr;
+  }
+
+}
 /* ===============================
    ANIMATIONS & MEDIA QUERIES
 ================================= */
@@ -138,7 +518,21 @@
   .scd-header-flex { flex-direction: column; align-items: stretch; gap: 12px; }
   .scd-view-mode-group { width: 100%; }
   .scd-view-mode-btn { flex: 1; justify-content: center; }
-
+  .scd-header-actions {
+    display: flex;
+    flex-direction: column; 
+    align-items: stretch;
+    width: 100% !important;
+    gap: 10px;             
+  }
+  .scd-export-excel-btn {
+    width: 100% !important;
+    max-width: none !important;
+    justify-content: center; 
+    padding: 12px !important; 
+    margin: 0 !important;
+    box-sizing: border-box;
+  }
   /* filter-bar เรียงแนวตั้ง */
   .scd-filter-bar { flex-direction: column; align-items: stretch; gap: 10px; }
   .scd-filter-bar > * { 
@@ -165,6 +559,19 @@
   .scd-clinic-tab-btn {
     flex: 0 0 auto;        
     white-space: nowrap;    
+  }
+  .scd-form-status-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;              
+    width: 100% !important;
+  }
+  .scd-add-walkin-btn {
+    width: 100% !important;
+    justify-content: center; 
+    padding: 12px !important; 
+    margin: 0 !important;
   }
   .scd-search-group, .scd-custom-select, .scd-date-range-container { flex: none !important; }
   .scd-col-dropdown-menu { width: 100%; position: fixed; bottom: 0; top: auto; left: 0; border-radius: 20px 20px 0 0; animation: scdSlideUp 0.3s ease; }

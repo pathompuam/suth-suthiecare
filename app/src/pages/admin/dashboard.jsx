@@ -112,8 +112,23 @@ export default function Dashboard() {
   const [selectedCase, setSelectedCase] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [staffOptions, setStaffOptions] = useState([]);
+  const [recentCases, setRecentCases] = useState([]);
 
   const charts = useMemo(() => chartsByForm[selectedFormId] || [], [chartsByForm, selectedFormId]);
+
+ 
+const fetchDashboardData = async () => {
+  try {
+    const res = await getRecentCases();
+    if (res && res.data) {
+      // 🟢 ใช้ข้อมูลที่ Backend ถอดรหัสมาให้แล้วได้เลย
+      setRecentCases(res.data); 
+    }
+  } catch (err) {
+    console.error("Error:", err);
+  }
+};
 
   const filteredForms = useMemo(() => {
     let list = forms;
@@ -247,9 +262,10 @@ export default function Dashboard() {
       try {
         const res = await getRecentCases(selectedClinic);
         setCases(res.data);
+        setRecentCases(res.data);
       } catch (err) {
-
         setCases([]);
+        setRecentCases([]);
       } finally {
         setIsLoading(false);
       }

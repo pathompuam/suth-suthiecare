@@ -120,7 +120,10 @@ export default function SutLanding2() {
   useEffect(() => {
     // Load Clinics
     getActiveClinics().then(res => {
-      setClinics(res.data.data || []);
+     const sorted = (res.data.data || []).sort(
+  (a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999)
+);
+setClinics(sorted);
       setLoadingClinics(false);
     }).catch(err => {
       console.error("Failed to load clinics", err);

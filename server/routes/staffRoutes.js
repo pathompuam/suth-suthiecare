@@ -43,4 +43,26 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.query(`
+      DELETE FROM staffs
+      WHERE id = ?
+    `, [id]);
+
+    res.json({
+      success: true
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      message: 'ลบผู้รับผิดชอบไม่สำเร็จ'
+    });
+  }
+});
+
 module.exports = router;

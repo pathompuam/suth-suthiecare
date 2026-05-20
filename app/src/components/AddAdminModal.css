@@ -46,8 +46,8 @@
 .adm-icon-badge {
   width: 40px;
   height: 40px;
-  background: #f0fdfa;
-  color: #4a9b9f;
+  background: #fffaf7;
+  color: #F47932;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -141,7 +141,7 @@
   margin-bottom: 8px;
 }
 
-.label-icon { color: #4a9b9f; }
+.label-icon { color: #F47932; }
 
 .adm-input, .adm-select {
   width: 100%;
@@ -156,9 +156,9 @@
 
 .adm-input:focus, .adm-select:focus {
   outline: none;
-  border-color: #4a9b9f;
+  border-color: #F47932;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(74, 155, 159, 0.1);
+  box-shadow: 0 0 0 4px rgba(244, 121, 50, 0.1);
 }
 
 /* Password Wrapper */
@@ -236,19 +236,19 @@
 
 .adm-btn-save {
   padding: 12px 32px;
-  background: #4a9b9f;
+  background: #F47932;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   color: white;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(74, 155, 159, 0.3);
+  box-shadow: 0 4px 12px rgba(244, 121, 50, 0.3);
   transition: all 0.2s;
 }
 
 .adm-btn-save:hover {
-  background: #3a8589;
-  transform: translateY(-2px);
+  background: #ea580c;
+  transform: translateY(-1px);
 }
 
 /* Utils */
