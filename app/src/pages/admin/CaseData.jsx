@@ -3,7 +3,7 @@ import Sidebar from "../../components/Sidebar";
 import CaseTable from "../../components/case/CaseTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
 import ExportExcelModal from "../../components/case/ExportExcelModal";
-import { getForms, getFormById, getFormResponses, createCase } from "../../services/api";
+import { getForms, getFormById, getFormResponses, createCase, getActiveClinics } from "../../services/api";
 import "./CaseData.css";
 import { useLocation } from "react-router-dom";
 import { FiFolder, FiUsers, FiList, FiSettings, FiSearch, FiChevronDown, FiLayers, FiActivity, FiCalendar, FiDownload, FiPlus, FiX } from 'react-icons/fi';
@@ -15,13 +15,25 @@ const FACULTIES = [
   "(7) สำนักวิชาทันตแพทยศาสตร์", "(8) สำนักวิชาสาธารณสุขศาสตร์", "(9) สำนักวิชาศาสตร์และศิลป์ดิจิทัล", "อื่นๆ"
 ];
 
-const CLINIC_INFO = {
-  general: { id: 'general', text: 'ทั่วไป', color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
-  teenager: { id: 'teenager', text: 'คลินิกวัยรุ่น', color: '#0284c7', bg: '#e0f2fe', border: '#7dd3fc' },
-  behavior: { id: 'behavior', text: 'คลินิกLSM', color: '#166534', bg: '#dcfce7', border: '#86efac' },
-  sti: { id: 'sti', text: 'คลินิกโรคติดต่อฯ', color: '#be185d', bg: '#fce7f3', border: '#f9a8d4' }
+const CLINIC_COLORS = ['#e0f2fe', '#dcfce7', '#fce7f3', '#fef3c7', '#e0e7ff', '#f3e8ff'];
+const CLINIC_TEXT_COLORS = ['#0284c7', '#166534', '#be185d', '#d97706', '#4338ca', '#7e22ce'];
+const CLINIC_BORDER_COLORS = ['#7dd3fc', '#86efac', '#f9a8d4', '#fcd34d', '#a5b4fc', '#d8b4fe'];
 
-};
+function getClinicConfig(slug, clinicsList = []) {
+  if (slug === 'general') return { id: 'general', text: 'ทั่วไป', color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
+  const clinic = clinicsList.find(c => c.slug === slug);
+  if (!clinic) return { id: slug, text: slug || '-', color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
+  
+  const index = clinicsList.findIndex(c => c.slug === slug);
+  const colorIndex = index % CLINIC_COLORS.length;
+  return {
+    id: slug,
+    text: clinic.name,
+    bg: CLINIC_COLORS[colorIndex],
+    color: CLINIC_TEXT_COLORS[colorIndex],
+    border: CLINIC_BORDER_COLORS[colorIndex]
+  };
+}
 
 const caseRiskColors = {
   "น้ำหนักน้อย / ผอม": { bg: '#d0f0fd', color: '#0c4a6e' },
@@ -131,7 +143,7 @@ const CustomDropdown = ({ icon: Icon, value, options, onChange, styleClass, icon
   );
 };
 
-function CreateCaseModal({ onClose, onSave }) {
+function CreateCaseModal({ onClose, onSave, clinics = [] }) {
 
   const [formData, setFormData] = useState({
     prefix: "",
@@ -175,7 +187,7 @@ function CreateCaseModal({ onClose, onSave }) {
     const now = new Date().toISOString();
 
     const clinicText =
-      CLINIC_INFO[formData.clinicType]?.text || "-";
+      getClinicConfig(formData.clinicType, clinics)?.text || "-";
 
     const allAnswers = {
       "เลขบัตรประชาชน": formData.citizenId || "-",
@@ -345,10 +357,8 @@ function CreateCaseModal({ onClose, onSave }) {
                   value={formData.clinicType}
                   onChange={(e) => handleChange("clinicType", e.target.value)}
                 >
-                  {Object.values(CLINIC_INFO).map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.text}
-                    </option>
+                  {clinics.map(c => (
+                    <option key={c.slug} value={c.slug}>{c.name}</option>
                   ))}
                 </select>
               </div>
@@ -447,22 +457,9 @@ export default function CaseData() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCreateCaseModalOpen, setIsCreateCaseModalOpen] = useState(false);
 
-  const [newCaseData, setNewCaseData] = useState({
-    citizenId: "",
-    studentId: "",
-    name: "",
-    phone: "",
-    faculty: "",
-    clinicType: "general",
-    riskLevel: "ต่ำ",
-    visitType: "walkin",
-    status: "รอประเมิน",
-    urgent: false,
-    suicideRisk: false,
-    note: ""
-  });
 
   const [forms, setForms] = useState([]);
+  const [clinics, setClinics] = useState([]);
   const [selectedFormId, setSelectedFormId] = useState(initialFormId);
   const [currentFormDetails, setCurrentFormDetails] = useState(null);
   const [responses, setResponses] = useState([]);
@@ -491,6 +488,10 @@ export default function CaseData() {
 
   useEffect(() => {
     const fetchForms = async () => {
+      try {
+        const clinicRes = await getActiveClinics();
+        setClinics(clinicRes.data.data || []);
+      } catch (err) {}
       try {
         const res = await getForms("latest");
         setForms(res.data);
@@ -672,7 +673,7 @@ export default function CaseData() {
 
   const allDynamicQuestions = (currentFormDetails?.questions || []).filter(q => q.type !== 'section' && q.type !== 'description');
   const selectedFormObj = forms.find(f => f.id === selectedFormId);
-  const cInfo = selectedFormObj ? CLINIC_INFO[selectedFormObj.clinic_type || 'general'] : null;
+  const cInfo = selectedFormObj ? getClinicConfig(selectedFormObj.clinic_type || 'general', clinics) : null;
 
   const displayThaiDate = (dateString) => {
     if (!dateString) return "";
@@ -780,9 +781,10 @@ export default function CaseData() {
               onChange={setClinicFilter}
               options={[
                 { value: 'all', label: 'ทุกคลินิก' },
-                ...Object.values(CLINIC_INFO).map(c => ({
-                  value: c.id,
-                  label: c.text
+                { value: 'general', label: 'ทั่วไป' },
+                ...clinics.map(c => ({
+                  value: c.slug,
+                  label: c.name
                 }))
               ]}
               styleClass="scd-filter-clinic"

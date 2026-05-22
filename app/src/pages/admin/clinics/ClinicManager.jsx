@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../../components/Sidebar';
 import { getAllClinics, createClinic, updateClinic, deleteClinic, reorderClinics } from '../../../services/api';
 import { FaPlus, FaEdit, FaTrash, FaImage, FaCheckCircle, FaTimesCircle, FaGripVertical } from 'react-icons/fa';
-import { FiCheckCircle, FiEdit3, FiMove } from 'react-icons/fi';
 import './ClinicManager.css';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -114,7 +113,7 @@ function SortableRow({ clinic, onEdit, onDelete }) {
 // ============================================================
 // ClinicManagerContent — Main Component
 // ============================================================
-function ClinicManagerContent({}) {
+function ClinicManagerContent() {
   const [clinics, setClinics] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

@@ -9,7 +9,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import thLocale from "@fullcalendar/core/locales/th";
 
-import { getFormResponses, getServices, getForms, getCaseAppointments, updateAppointmentStatus } from "../../services/api"; 
+import { getFormResponses, getServices, getForms, getCaseAppointments, updateAppointmentStatus, getActiveClinics } from "../../services/api"; 
 
 import { FiCalendar, FiList, FiLayers, FiActivity, FiChevronDown, FiSearch } from "react-icons/fi";
 import "./Appointment.css";
@@ -93,6 +93,7 @@ export default function Appointment() {
   const [isLoading, setIsLoading] = useState(false);
   const [appointments, setAppointments] = useState([]);
   const [servicesList, setServicesList] = useState([]);
+  const [clinics, setClinics] = useState([]);
   const [selectedCase, setSelectedCase] = useState(null);
 
   // 🟢 State สำหรับจัดการ Popup ลอยของปฏิทิน
@@ -199,9 +200,17 @@ export default function Appointment() {
     }
   };
 
+  const fetchClinics = async () => {
+    try {
+      const res = await getActiveClinics();
+      setClinics(res.data.data || []);
+    } catch (err) {}
+  };
+
   useEffect(() => {
     fetchServices();
     fetchForms();
+    fetchClinics();
   }, []);
 
   /* ================= FILTER LOGIC ================= */
@@ -388,9 +397,7 @@ export default function Appointment() {
               options={[
                 { value: '', label: 'ทุกคลินิก (All)' },
                 { value: 'general', label: 'ทั่วไป' },
-                { value: 'teenager', label: 'คลินิกวัยรุ่น' },
-                { value: 'behavior', label: 'คลินิกLSM' },
-                { value: 'sti', label: 'คลินิกโรคติดต่อ' }
+                ...clinics.map(c => ({ value: c.slug, label: c.name }))
               ]}
             />
 

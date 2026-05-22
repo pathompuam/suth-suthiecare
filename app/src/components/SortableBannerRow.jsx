@@ -1,7 +1,7 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {  FiMenu } from "react-icons/fi"; 
+
 import { FaEdit, FaTrash, FaGripVertical } from "react-icons/fa";
 
 export default function SortableBannerRow({ banner, onDelete, onEdit }) {

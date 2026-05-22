@@ -517,11 +517,7 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
 
     try {
       const staffName = getCurrentStaff();
-      const selectedOpt = statusOptions.find(opt => opt.name === status);
-      const currentStatusId = (selectedOpt && selectedOpt.id !== 'legacy') ? selectedOpt.id : null;
       const targetMasterId = masterCaseInfo?.id || null;
-      
-      const staffIdToSend = selectedStaff ? Number(selectedStaff) : null;
 
       if (isStatusChanged || isOverallRiskChanged || hasImpression || isDynamicChanged || isClinicalDataChanged) {
         const logParts = [];
@@ -569,7 +565,7 @@ export default function CaseDetailModal({ data, onClose, onCaseUpdated, onCaseDe
         setDynamicRisks(clearedDynamicRisks);
       }
 
-      if (onCaseUpdated) onCaseUpdated({ id: data.id, master_case_id: targetMasterId, status: status, overall_risk: riskLevel, risk_level: data.risk_level });
+      if (onCaseUpdated) onCaseUpdated({ id: data.id, master_case_id: targetMasterId, status: status, overall_risk: riskLevel, risk_level: data.risk_level, staff_id: selectedStaff ? Number(selectedStaff) : null });
 
       if (hasNote) {
         const formattedNote = staffNote.split('\n').filter(line => line.trim() !== "").join('\n');

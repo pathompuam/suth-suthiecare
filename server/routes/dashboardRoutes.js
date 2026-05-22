@@ -23,45 +23,6 @@ router.get('/dashboard/summary', async (req, res) => {
     }
 });
 
-// 2. ข้อมูลเคสล่าสุด
-router.get('/dashboard/recent', async (req, res) => {
-    try {
-        const { clinic } = req.query; 
-        // 🟢 เพิ่ม r.form_id ลงใน SELECT ด้วย! สำคัญมากสำหรับใช้ดึงเกณฑ์คะแนนย่อย
-        let sql = `
-            SELECT r.id, r.form_id, r.identity_value, r.summary_data, r.submitted_at, r.status, r.risk_level, r.master_case_id, f.title as form_title, f.clinic_type 
-            FROM form_responses r 
-            LEFT JOIN forms f ON r.form_id = f.id 
-            WHERE 1=1
-        `;
-        const params = [];
-        if (clinic && clinic !== 'all') {
-            sql += " AND f.clinic_type = ?";
-            params.push(clinic);
-        }
-        sql += " ORDER BY r.submitted_at DESC LIMIT 15";
-
-        const [rows] = await db.query(sql, params);
-
-        const decryptedRows = rows.map(r => {
-            if (r.summary_data) {
-                try {
-                    let summaryStr = safeDecrypt(r.summary_data);
-                    let summary = typeof summaryStr === 'string' ? JSON.parse(summaryStr) : summaryStr;
-                    if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
-                    if (summary.phone) summary.phone = safeDecrypt(summary.phone);
-                    r.summary_data = summary;
-                } catch (e) {}
-            }
-            return r;
-        });
-        
-        res.json(decryptedRows);
-    } catch (err) {
-        console.error("Dashboard Recent Error:", err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
 
 // 3. ดึงการตั้งค่าหน้า Dashboard
 router.get('/dashboard-settings/settings', async (req, res) => {
@@ -365,7 +326,7 @@ router.get('/dashboard/recent', async (req, res) => {
             
             if (r.summary_data) {
                 try {
-                    let summaryStr = r.summary_data;
+                    let summaryStr = decryptIfEncrypted(r.summary_data);
                     let summary = typeof summaryStr === 'string' ? JSON.parse(summaryStr) : summaryStr;
                     if (summary.display_name) summary.display_name = decryptIfEncrypted(summary.display_name);
                     if (summary.display_phone) summary.display_phone = decryptIfEncrypted(summary.display_phone);

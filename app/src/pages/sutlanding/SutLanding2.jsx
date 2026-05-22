@@ -18,22 +18,12 @@ function stripHtml(html) {
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
 }
 
-function useImageType(src) {
-  const [isBanner, setIsBanner] = useState(false);
-  useEffect(() => {
-    if (!src) return;
-    const img = new Image();
-    img.onload = () => setIsBanner(img.naturalWidth / img.naturalHeight >= 1.4);
-    img.src = src;
-  }, [src]);
-  return isBanner;
-}
+
 
 // ✅ FormCard ที่แก้ไขแล้ว
 function FormCard({ form, themeClass, count, isLoaded }) {
   const navigate = useNavigate();
   const displayImage = form.image;
-  const isBanner = useImageType(displayImage);
   const plainDesc = stripHtml(form.description || "คลิกเพื่อประเมินความเสี่ยง");
 
   return (

@@ -432,6 +432,9 @@ router.get('/forms/:id/responses', async (req, res) => {
                 if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
                 if (summary.display_phone) summary.display_phone = safeDecrypt(summary.display_phone);
                 if (summary.phone) summary.phone = safeDecrypt(summary.phone);
+                if (summary.citizenId) summary.citizenId = safeDecrypt(summary.citizenId);
+                if (summary.idCard) summary.idCard = safeDecrypt(summary.idCard);
+                if (summary.name) summary.name = safeDecrypt(summary.name);
                 
                 if (summary.raw_answers) {
                     for (const key in summary.raw_answers) {
