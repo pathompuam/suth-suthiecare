@@ -1,19 +1,14 @@
 # 🩺 Suthie Care
 
-> ระบบบริหารจัดการข้อมูลคลินิกและแบบประเมินสุขภาพแบบครบวงจร  
-> พัฒนาด้วยสถาปัตยกรรม Client-Server ที่แยก Frontend และ Backend ออกจากกันอย่างชัดเจน
-
-<p align="center">
-  <img src="docs/suthiecare_preview.png" alt="Suthie Care Dashboard Preview" width="800" />
-</p>
-
+> Comprehensive clinic data management and health assessment system.
+> Developed with a Client-Server architecture separating Frontend and Backend.
 ---
 
-## 💻 เทคโนโลยีที่ใช้ (Tech Stack)
+## 💻 Tech Stack
 
 ### Frontend — `app/`
 
-| หมวด | เทคโนโลยี |
+| Category | Technology |
 |---|---|
 | **Framework** | React 19 (Create React App) |
 | **Routing** | React Router DOM v7 |
@@ -31,7 +26,7 @@
 
 ### Backend — `server/`
 
-| หมวด | เทคโนโลยี |
+| Category | Technology |
 |---|---|
 | **Runtime** | Node.js |
 | **Framework** | Express.js 5 |
@@ -47,61 +42,61 @@
 
 ---
 
-## 🛠 ฟีเจอร์หลัก
+## 🛠 Key Features
 
-### 🌐 ส่วนสาธารณะ (Public)
-- **Landing Page** — หน้าแรกของระบบพร้อมข้อมูลคลินิกและแบนเนอร์
-- **แบบประเมินออนไลน์** — กรอกแบบประเมินสุขภาพผ่านลิงก์ที่เข้ารหัสอย่างปลอดภัย
-- **ผลการประเมิน** — ดูผลลัพธ์หลังส่งแบบประเมินเสร็จ
-- **ค้นหาประวัติ** — ค้นหาและตรวจสอบประวัติการประเมินของตนเอง
+### 🌐 Public
+- **Landing Page** — The main page of the system with clinic information and banners.
+- **Online Assessment** — Fill out health assessments via securely encrypted links.
+- **Assessment Results** — View results after completing an assessment.
+- **History Search** — Search and review your own assessment history.
 
-### 🔒 ส่วน Admin (ต้องเข้าสู่ระบบ)
-- **Dashboard** — แดชบอร์ดสถิติภาพรวม พร้อม widget กราฟที่ปรับแต่งได้ (Recharts)
-- **จัดการฟอร์ม** — สร้าง/แก้ไข/ทำซ้ำแบบประเมินด้วย Form Builder แบบ Drag & Drop
-- **จัดการเคส** — ระบบติดตามเคสผู้ป่วยแบบต่อเนื่อง, บันทึกข้อมูล, ดูกราฟ PHQ, Export Excel
-- **จัดการกลุ่มเสี่ยง** — ติดตามกรณีที่มีความเสี่ยง แยกดูเฉพาะเคสที่ต้องดูแลพิเศษ
-- **นัดหมาย** — ระบบนัดหมายพร้อมปฏิทิน (FullCalendar) แสดงเป็นรายเดือน/รายสัปดาห์
-- **จัดการผู้ใช้** — เพิ่ม/แก้ไข/ลบบัญชีผู้ใช้ในระบบ
-- **Roles & Permissions** — กำหนดสิทธิ์การใช้งานตาม Role (Admin, Staff, ...)
-- **จัดการคลินิก** — เพิ่ม/แก้ไข/จัดเรียงลำดับคลินิก
-- **จัดการเจ้าหน้าที่** — บันทึกข้อมูลเจ้าหน้าที่ประจำคลินิก
-- **จัดการแบนเนอร์** — อัปโหลดรูปแบนเนอร์หน้า Landing พร้อม Drag & Drop จัดเรียงลำดับ
-- **Template บันทึกข้อมูล** — สร้าง/แก้ไข template สำหรับบันทึกข้อมูลตามประเภทคลินิก
+### 🔒 Admin (Login Required)
+- **Dashboard** — Overview statistics dashboard with customizable graph widgets (Recharts).
+- **Form Management** — Create/edit/duplicate assessments with a Drag & Drop Form Builder.
+- **Case Management** — Continuous patient case tracking system, record keeping, PHQ graphs, Excel Export.
+- **Risk Group Management** — Monitor cases with risk, filtering specifically for cases requiring special care.
+- **Appointments** — Appointment system with calendar (FullCalendar) displayed monthly/weekly.
+- **User Management** — Add/edit/delete user accounts in the system.
+- **Roles & Permissions** — Set access permissions based on Role (Admin, Staff, ...).
+- **Clinic Management** — Add/edit/reorder clinics.
+- **Staff Management** — Record clinic staff information.
+- **Banner Management** — Upload Landing page banner images with Drag & Drop reordering.
+- **Data Entry Templates** — Create/edit templates for data entry by clinic type.
 
-### 🔐 ระบบความปลอดภัย
-- **การเข้ารหัสข้อมูล** — ข้อมูลส่วนบุคคลเข้ารหัสด้วย AES-256-GCM พร้อม HMAC สำหรับค้นหา
-- **การปกปิดข้อมูล** — ระบบ masking ชื่อ, เบอร์โทร, เลขบัตรประชาชน
-- **ตรวจสอบข้อมูลไทย** — Validate เลขบัตรประชาชน 13 หลัก และเบอร์โทรศัพท์ไทย
-- **JWT Authentication** — ยืนยันตัวตนด้วย Token พร้อม Session Sync ข้ามแท็บ
-- **Rate Limiting** — ป้องกัน Brute-force และ DDoS
-- **CAPTCHA** — ป้องกัน Bot ด้วย hCaptcha
-- **แจ้งเตือนผ่าน Telegram** — แจ้งเตือนเหตุผิดปกติหรือข้อมูลสำคัญผ่าน Telegram Bot
+### 🔐 Security System
+- **Data Encryption** — Personal data is encrypted with AES-256-GCM along with HMAC for searching.
+- **Data Masking** — System for masking names, phone numbers, and Thai National ID numbers.
+- **Thai Data Validation** — Validation for 13-digit Thai National ID and Thai phone numbers.
+- **JWT Authentication** — Identity verification with Tokens along with Cross-tab Session Sync.
+- **Rate Limiting** — Protection against Brute-force and DDoS attacks.
+- **CAPTCHA** — Bot protection using hCaptcha.
+- **Telegram Notifications** — Alerts for anomalies or important information via Telegram Bot.
 
 ---
 
-## 🚀 การติดตั้งและเปิดใช้งาน
+## 🚀 Installation & Setup
 
-### ข้อกำหนดเบื้องต้น (Prerequisites)
+### Prerequisites
 
 - **Node.js** >= 18
-- **MySQL** (ฐานข้อมูลที่สร้างไว้แล้ว)
-- **Redis** (ไม่บังคับ แต่แนะนำสำหรับ caching)
+- **MySQL** (Pre-created database)
+- **Redis** (Optional but recommended for caching)
 
-### 1. Clone โปรเจกต์
+### 1. Clone the project
 
 ```bash
-git clone https://github.com/pathompuam/suth-suthiecare.git
+git clone (github URL)
 cd suth-suthiecare
 ```
 
-### 2. ตั้งค่า Backend
+### 2. Backend Setup
 
 ```bash
 cd server
 npm install
 ```
 
-สร้างไฟล์ `.env` ในโฟลเดอร์ `server/`:
+Create a `.env` file in the `server/` directory:
 
 ```env
 # Database
@@ -109,9 +104,6 @@ DB_HOST=localhost
 DB_USER=your_db_user
 DB_PASSWORD=your_db_password
 DB_NAME=your_db_name
-
-# Auth
-JWT_SECRET=your_jwt_secret_key
 
 # Encryption
 AES_KEY=your_64_char_hex_key_here
@@ -125,51 +117,51 @@ TELEGRAM_CHAT_ID=your_chat_id
 PORT=5000
 ```
 
-เริ่มต้นเซิร์ฟเวอร์:
+Start the server:
 
 ```bash
 node index.js
 # 🚀 Server started on port 5000
 ```
 
-### 3. ตั้งค่า Frontend
+### 3. Frontend Setup
 
 ```bash
 cd app
 npm install
 ```
 
-สร้างไฟล์ `.env` ในโฟลเดอร์ `app/`:
+Create a `.env` file in the `app/` directory:
 
 ```env
 REACT_APP_API_URL=http://localhost:5000/api
 ```
 
-เริ่มต้นแอป:
+Start the app:
 
 ```bash
 npm start
-# เปิดเบราว์เซอร์ที่ http://localhost:3000
+# Open browser at http://localhost:3000
 ```
 
 ---
 
 ## 🗂️ API Routes
 
-| Prefix | Route File | คำอธิบาย |
+| Prefix | Route File | Description |
 |---|---|---|
-| `/api` | `authRoutes.js` | เข้าสู่ระบบ, ยืนยัน Token |
-| `/api` | `formRoutes.js` | CRUD ฟอร์ม, ส่งคำตอบ, ดูผลลัพธ์ |
-| `/api` | `caseRoutes.js` | จัดการเคส, นัดหมาย, บันทึกประวัติ |
-| `/api` | `userRoutes.js` | CRUD ผู้ใช้ |
-| `/api` | `roleRoutes.js` | CRUD Role & Permissions |
-| `/api` | `bannerRoutes.js` | CRUD แบนเนอร์ |
-| `/api` | `dashboardRoutes.js` | สถิติ, กราฟ, Dashboard settings |
-| `/api/clinics` | `clinicRoutes.js` | CRUD คลินิก |
-| `/api/staffs` | `staffRoutes.js` | CRUD เจ้าหน้าที่ |
+| `/api` | `authRoutes.js` | Login, Token verification |
+| `/api` | `formRoutes.js` | Form CRUD, Submit answers, View results |
+| `/api` | `caseRoutes.js` | Case management, Appointments, History recording |
+| `/api` | `userRoutes.js` | User CRUD |
+| `/api` | `roleRoutes.js` | Role & Permissions CRUD |
+| `/api` | `bannerRoutes.js` | Banner CRUD |
+| `/api` | `dashboardRoutes.js` | Statistics, Graphs, Dashboard settings |
+| `/api/clinics` | `clinicRoutes.js` | Clinic CRUD |
+| `/api/staffs` | `staffRoutes.js` | Staff CRUD |
 
 ---
 
 ## 📄 License
 
-โปรเจกต์นี้อยู่ภายใต้สัญญาอนุญาต **Apache License 2.0** — ดูรายละเอียดที่ไฟล์ [LICENSE](./LICENSE)
+This project is licensed under the **Apache License 2.0** — see the [LICENSE](./LICENSE) file for details.
