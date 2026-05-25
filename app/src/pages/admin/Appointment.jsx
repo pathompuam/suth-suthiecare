@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import Sidebar from "../../components/Sidebar";
-
 import AppointmentTable from "../../components/appointment/AppointmentTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
 
@@ -90,7 +88,8 @@ export default function Appointment() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [servicesList, setServicesList] = useState([]);
   const [clinics, setClinics] = useState([]);
@@ -181,36 +180,40 @@ export default function Appointment() {
   }, [forms.length, filteredForms, selectedFormId]); 
 
   useEffect(() => {
+    if (isInitialSetup) return;
+    if (!selectedFormId) {
+      setIsLoading(false);
+      setAppointments([]);
+      return;
+    }
     fetchAppointments(selectedFormId);
-  }, [selectedFormId, fetchAppointments]);
+  }, [selectedFormId, fetchAppointments, isInitialSetup]);
 
   const fetchServices = async () => {
-    try {
-      const res = await getServices();
-      setServicesList(res.data);
-    } catch (err) {}
+    const res = await getServices();
+    setServicesList(res.data);
   };
 
   const fetchForms = async () => {
-    try {
-      const res = await getForms("latest");
-      setForms(res.data);
-    } catch (err) {
-      
-    }
+    const res = await getForms("latest");
+    setForms(res.data);
   };
 
   const fetchClinics = async () => {
-    try {
-      const res = await getActiveClinics();
-      setClinics(res.data.data || []);
-    } catch (err) {}
+    const res = await getActiveClinics();
+    setClinics(res.data.data || []);
   };
 
   useEffect(() => {
-    fetchServices();
-    fetchForms();
-    fetchClinics();
+    const loadInitial = async () => {
+      await Promise.all([
+        fetchServices().catch(() => {}),
+        fetchForms().catch(() => {}),
+        fetchClinics().catch(() => {})
+      ]);
+      setIsInitialSetup(false);
+    };
+    loadInitial();
   }, []);
 
   /* ================= FILTER LOGIC ================= */
@@ -328,9 +331,7 @@ export default function Appointment() {
   /* ================= UI ================= */
   return (
     <div className="apt-admin-layout">
-      <Sidebar activeKey="appointment" />
-
-      <main className="apt-main-content">
+<main className="apt-main-content">
         
         <div className="apt-container">
           
@@ -375,7 +376,13 @@ export default function Appointment() {
               icon={FiLayers} 
               value={selectedFormId} 
               onChange={setSelectedFormId}
-              options={filteredForms.length > 0 ? filteredForms.map(f => ({ value: f.id, label: f.title })) : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]}
+              options={
+                isInitialSetup
+                  ? [{ value: '', label: 'กำลังโหลดแบบฟอร์ม...' }]
+                  : filteredForms.length > 0 
+                    ? filteredForms.map(f => ({ value: f.id, label: f.title })) 
+                    : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
+              }
               style={{ flex: '1 1 300px' }} /* บังคับยืดสุดขอบ */
             />
 
@@ -476,7 +483,7 @@ export default function Appointment() {
           {!calendarMode ? (
             <AppointmentTable 
               appointments={filteredAppointments} 
-              isLoading={isLoading}
+              isLoading={isLoading || isInitialSetup}
               onSelectCase={setSelectedCase} 
               onUpdateApptStatus={handleUpdateApptStatus}
             />

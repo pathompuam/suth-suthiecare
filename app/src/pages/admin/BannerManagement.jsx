@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import Sidebar from "../../components/Sidebar";
 import "./BannerManagement.css";
 import { FiChevronLeft, FiChevronRight, FiPlus, FiInfo, FiImage } from "react-icons/fi";
 import AddBannerModal from "../../components/AddBannerModal";
@@ -104,8 +103,7 @@ export default function BannerManagement() {
 
   return (
     <div className="bm-wrapper">
-      <Sidebar activeKey="banner" />
-      <div className="bm-page">
+<div className="bm-page">
 
         <div className="bm-header">
           <h2 className="bm-title" >จัดการภาพแบนเนอร์</h2>

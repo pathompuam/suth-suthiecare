@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../components/Sidebar";
 import CreateRoleModal from "../../components/CreateRoleModal";
 import "./RolesPermissions.css";
 import { FiChevronDown, FiChevronRight, FiCheckCircle, FiSearch, FiTrash2 } from "react-icons/fi";
@@ -145,8 +144,7 @@ export default function RolesPermissions() {
 
   return (
     <div className="srp-admin-layout srp-roles-permissions-page">
-      <Sidebar activeKey="roles" />
-      <main className="srp-main-content-area">
+<main className="srp-main-content-area">
         <div className="srp-roles-header-section">
           <h1>บทบาทและสิทธิ์</h1>
           <button className="srp-create-btn" onClick={() => setOpenCreateModal(true)}>+ เพิ่มบทบาท</button>

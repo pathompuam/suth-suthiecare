@@ -125,9 +125,23 @@ const Sidebar = ({ activeKey = 'dashboard' }) => {
     const saved = localStorage.getItem("sidebarCollapsed");
     return saved === "true";
   });
-  const [openMenu, setOpenMenu] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [openMenu, setOpenMenu] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth > 768) {
+      const parentMenu = rawMenuItems.find(item =>
+        item.children?.some(child => location.pathname.startsWith(child.href))
+      );
+      if (parentMenu) {
+        sessionStorage.setItem('sidebarOpenMenu', parentMenu.key);
+        return parentMenu.key;
+      }
+      return sessionStorage.getItem('sidebarOpenMenu') || null;
+    }
+    return null;
+  });
+
   const [manualActive, setManualActive] = useState(null);
 
   const menuRef = useRef(null);
@@ -170,6 +184,7 @@ const Sidebar = ({ activeKey = 'dashboard' }) => {
       );
       if (parentMenu) {
         setOpenMenu(parentMenu.key);
+        sessionStorage.setItem('sidebarOpenMenu', parentMenu.key);
       }
     } else {
       setOpenMenu(null);
@@ -207,7 +222,11 @@ const Sidebar = ({ activeKey = 'dashboard' }) => {
       if (window.innerWidth > 768) {
         const savedPos = sessionStorage.getItem('sidebarScrollPos');
         if (savedPos !== null) {
-          menuEl.scrollTop = parseInt(savedPos, 10);
+          setTimeout(() => {
+            if (menuRef.current) {
+              menuRef.current.scrollTop = parseInt(savedPos, 10);
+            }
+          }, 10);
         }
       }
       menuEl.addEventListener('scroll', handleScroll);
@@ -313,8 +332,14 @@ const Sidebar = ({ activeKey = 'dashboard' }) => {
                   <button
                     className={`menu-item ${isParentActive ? 'active' : ''}`}
                     onClick={() => {
-                      setOpenMenu(isOpen ? null : item.key);
+                      const newOpen = isOpen ? null : item.key;
+                      setOpenMenu(newOpen);
                       setManualActive(item.key);
+                      if (newOpen) {
+                        sessionStorage.setItem('sidebarOpenMenu', newOpen);
+                      } else {
+                        sessionStorage.removeItem('sidebarOpenMenu');
+                      }
                     }}
                   >
                     <span className="icon">{item.icon}</span>

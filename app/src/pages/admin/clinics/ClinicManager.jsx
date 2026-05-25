@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Sidebar from '../../../components/Sidebar';
 import { getAllClinics, createClinic, updateClinic, deleteClinic, reorderClinics } from '../../../services/api';
 import { FaPlus, FaEdit, FaTrash, FaImage, FaCheckCircle, FaTimesCircle, FaGripVertical } from 'react-icons/fa';
 import './ClinicManager.css';
@@ -300,8 +299,7 @@ function ClinicManagerContent() {
 
   return (
     <div className="cm-admin-page">
-      <Sidebar activeKey="clinics" />
-      <main className="cm-main">
+<main className="cm-main">
         <header className="cm-header">
           <div className="cm-header-info">
             <h1>จัดการคลินิก</h1>

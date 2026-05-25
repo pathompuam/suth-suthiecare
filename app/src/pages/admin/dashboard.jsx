@@ -7,7 +7,6 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
-import Sidebar from '../../components/Sidebar';
 import './dashboard.css';
 import AddChartModal from "../../components/AddChartModal";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -118,6 +117,8 @@ export default function Dashboard() {
   const [selectedCase, setSelectedCase] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  // 🟢 1. เพิ่ม State นี้เพื่อกั้นการโหลดข้อมูลก่อนเวลาอันควร
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
   const charts = useMemo(() => chartsByForm[selectedFormId] || [], [chartsByForm, selectedFormId]);
 
 
@@ -135,6 +136,7 @@ export default function Dashboard() {
   }, [forms, selectedClinic, formStatusFilter]);
 
   useEffect(() => {
+    if (isInitialSetup) return; // 🟢 3.4 สั่งให้หยุดรอ
     const fetchMasterCaseStats = async () => {
       setIsStatsLoading(true);
       try {
@@ -149,7 +151,7 @@ export default function Dashboard() {
       }
     };
     fetchMasterCaseStats();
-  }, [selectedClinic, selectedFormId, statsRefetchTrigger]);
+  }, [selectedClinic, selectedFormId, statsRefetchTrigger, isInitialSetup]); // 🟢 3.3 เพิ่ม isInitialSetup เป็น dependency
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -178,7 +180,11 @@ export default function Dashboard() {
             }
           }
         }
-      } catch (err) { }
+      } catch (err) { 
+      } finally {
+        // 🟢 2. โหลดตั้งค่าเริ่มต้นเสร็จแล้ว ปลดล็อคได้!
+        setIsInitialSetup(false); 
+      }
     };
     loadInitialData();
   }, []);
@@ -346,8 +352,7 @@ export default function Dashboard() {
 
   return (
     <div className="admin-page">
-      <Sidebar />
-      <main className="admin-content">
+<main className="admin-content">
         <header className="content-header">
           <h1>แดชบอร์ด</h1>
           <div className="dashboard-filters">
@@ -457,7 +462,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {isLoading ? (
+        {isInitialSetup ? (
           <div className="db-loading-state">
             <div className="db-loading-spinner"></div>
             <p>กำลังโหลดข้อมูล...</p>

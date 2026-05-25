@@ -6,7 +6,6 @@ import React, {
   useCallback,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Sidebar from "../../../components/Sidebar";
 import {
   saveFormToDb,
   getFormById,
@@ -1085,9 +1084,7 @@ const FormBuilder = () => {
         className="sfb-admin-layout"
         style={{ backgroundColor: "var(--bg-color)" }}
       >
-        <Sidebar activeKey="forms" />
-
-        {isLoading ? (
+{isLoading ? (
           <main
             className="sfb-builder-container"
             style={{

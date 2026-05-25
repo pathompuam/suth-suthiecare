@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import "./RiskCases.css";
-import Sidebar from "../../components/Sidebar";
 import CaseTable from "../../components/case/CaseTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
 import { getForms, getFormById, getFormResponses, getActiveClinics } from "../../services/api";
@@ -105,7 +104,8 @@ export default function RiskCases() {
   const [selectedFormId, setSelectedFormId] = useState("");
   const [currentFormDetails, setCurrentFormDetails] = useState(null);
   const [responses, setResponses] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [visibleColumns, setVisibleColumns] = useState([]);
   const [showColMenu, setShowColMenu] = useState(false);
   const colMenuRef = useRef(null);
@@ -125,21 +125,30 @@ export default function RiskCases() {
   }, []);
 
   useEffect(() => {
-    getActiveClinics().then(res => {
-      setClinics(res.data.data || []);
-    }).catch(() => {});
+    const fetchInitialData = async () => {
+      try {
+        const [clinicRes, formsRes] = await Promise.all([
+          getActiveClinics().catch(() => ({ data: { data: [] } })),
+          getForms("latest").catch(() => ({ data: [] }))
+        ]);
+        
+        setClinics(clinicRes.data.data || []);
+        const fetchedForms = formsRes.data || [];
+        setForms(fetchedForms);
 
-    getForms("latest").then(res => {
-      setForms(res.data);
-      const publishedForms = res.data.filter(f => f.status === 'published');
-      if (publishedForms.length > 0) {
-        setSelectedFormId(publishedForms[0].id);
-        setFormStatusFilter('published');
-      } else if (res.data.length > 0) {
-        setSelectedFormId(res.data[0].id);
-        setFormStatusFilter('all');
+        const publishedForms = fetchedForms.filter(f => f.status === 'published');
+        if (publishedForms.length > 0) {
+          setSelectedFormId(publishedForms[0].id);
+          setFormStatusFilter('published');
+        } else if (fetchedForms.length > 0) {
+          setSelectedFormId(fetchedForms[0].id);
+          setFormStatusFilter('all');
+        }
+      } finally {
+        setIsInitialSetup(false);
       }
-    }).catch(() => {})
+    };
+    fetchInitialData();
   }, []);
 
   const filteredFormsList = useMemo(() => {
@@ -164,7 +173,11 @@ export default function RiskCases() {
 
   useEffect(() => {
     const fetchAllData = async () => {
-      if (!forms.length) return;
+      if (isInitialSetup) return;
+      if (!forms.length) {
+        setIsLoading(false);
+        return;
+      }
 
       let targetFormId = selectedFormId;
       if (!targetFormId && forms.length > 0) {
@@ -281,8 +294,7 @@ export default function RiskCases() {
 
   return (
     <div className="admin-wrapper2">
-      <Sidebar activeKey="risk-cases" />
-      <main className="main-content">
+<main className="main-content">
         <div className="risk-container">
 
           {/* Header */}
@@ -291,13 +303,14 @@ export default function RiskCases() {
               <div>
                 <h2 className="rc-title">
                   <label className="rc-inside-title">เคสเสี่ยง:</label> {
-                    // 🟢 เช็คก่อนว่ามีฟอร์มในหมวดหมู่ที่เลือกไหม ถ้าไม่มีให้ขึ้น "ไม่มีข้อมูลแบบฟอร์ม" เลย
-                    filteredFormsList.length === 0
-                      ? "ไม่มีข้อมูลแบบฟอร์ม"
-                      : isLoading ? "กำลังโหลด..." : (currentFormDetails?.title || "ไม่พบชื่อแบบฟอร์ม")
+                    //  1. เช็ค isInitialSetup ก่อน
+                    isInitialSetup 
+                      ? "กำลังโหลด..."
+                      : filteredFormsList.length === 0
+                        ? "ไม่มีข้อมูลแบบฟอร์ม"
+                        : isLoading ? "กำลังโหลด..." : (currentFormDetails?.title || "ไม่พบชื่อแบบฟอร์ม")
                   }
                   
-                  {/* 🟢 เช็คด้วยว่าต้องมีฟอร์มถึงจะโชว์ป้ายชื่อคลินิก ป้องกันการแสดงป้ายผิดหมวดหมู่ */}
                   {filteredFormsList.length > 0 && cInfo && (
                     <span className="rc-title-badge" style={{ backgroundColor: cInfo.bg, color: cInfo.color, border: `1px solid ${cInfo.border}` }}>
                       {cInfo.text}
@@ -333,9 +346,11 @@ export default function RiskCases() {
               value={selectedFormId}
               onChange={setSelectedFormId}
               options={
-                filteredFormsList.length > 0
-                  ? filteredFormsList.map(f => ({ value: f.id, label: f.title }))
-                  : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
+                isInitialSetup
+                  ? [{ value: '', label: 'กำลังโหลดแบบฟอร์ม...' }]
+                  : filteredFormsList.length > 0
+                    ? filteredFormsList.map(f => ({ value: f.id, label: f.title }))
+                    : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
               }
               style={{ borderColor: '#e53935' }}
             />
@@ -462,7 +477,7 @@ export default function RiskCases() {
             data={filteredData}
             questions={currentFormDetails?.questions || []}
             visibleColumns={visibleColumns}
-            isLoading={isLoading}
+            isLoading={isLoading || isInitialSetup}
             onSelectCase={setSelectedCase}
             viewMode="form" /* หน้า Risk ยึดมุมมอง Form เสมอตามโครงสร้างของคุณ */
           />

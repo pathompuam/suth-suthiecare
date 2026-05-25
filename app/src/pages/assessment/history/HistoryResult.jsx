@@ -8,14 +8,14 @@ import {
   getCaseLogs,
   updateHistoryResponse,
   getCaseAnswers,
-  getFormById 
+  getFormById
 } from '../../../services/api';
 
 import {
   FiEye, FiEyeOff, FiClock,
   FiFileText, FiUser, FiActivity,
   FiMessageSquare, FiPlusCircle, FiInfo, FiX,
-  FiAlertCircle,FiChevronDown, FiChevronUp
+  FiAlertCircle, FiChevronDown, FiChevronUp, FiDownload
 } from 'react-icons/fi';
 
 import { FaChartBar } from 'react-icons/fa';
@@ -77,7 +77,7 @@ const ExpandableText = ({ text, color }) => {
           onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
         >
           {isExpanded ? (
-            <>ย่อข้อความ <FiChevronUp size={18} /></> 
+            <>ย่อข้อความ <FiChevronUp size={18} /></>
           ) : (
             <>อ่านเพิ่มเติม <FiChevronDown size={18} /></>
           )}
@@ -97,12 +97,12 @@ export default function HistoryResult() {
 
   const [showId, setShowId] = useState(false);
   const [expanded, setExpanded] = useState(null);
-  
-  const [activeInnerTab, setActiveInnerTab] = useState({}); 
+
+  const [activeInnerTab, setActiveInnerTab] = useState({});
 
   const [toast, setToast] = useState(null);
   const [formAnswers, setFormAnswers] = useState({});
-  const [formQuestionsMap, setFormQuestionsMap] = useState({}); 
+  const [formQuestionsMap, setFormQuestionsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [caseLogs, setCaseLogs] = useState([]);
 
@@ -187,7 +187,7 @@ export default function HistoryResult() {
 
   const loadAnswers = async (record) => {
     const id = record.id;
-    
+
     if (record.form_id && !formQuestionsMap[record.form_id]) {
       try {
         const formRes = await getFormById(record.form_id);
@@ -212,29 +212,29 @@ export default function HistoryResult() {
 
   const toggleCard = (record) => {
     const id = record.id;
-    if (expanded === id) { 
-      setExpanded(null); 
-    } else { 
-      setExpanded(id); 
+    if (expanded === id) {
+      setExpanded(null);
+    } else {
+      setExpanded(id);
       loadAnswers(record);
       const hasScores = record.summary_data?.score_results?.length > 0;
       setActiveInnerTab(prev => ({ ...prev, [id]: hasScores ? 'scores' : 'answers' }));
     }
   };
 
- // --- ส่วน Loading ---
-if (loading) return (
-  <div className="hr-loading-screen">
-    <div className="hr-loading-container">
-      <div className="hr-loading-spinner">
-        <div className="hr-spinner-ring"></div>
-      </div>
-      <div className="hr-loading-content">
-        <h3 className="hr-loading-text">กำลังโหลด</h3>
+  // --- ส่วน Loading ---
+  if (loading) return (
+    <div className="hr-loading-screen">
+      <div className="hr-loading-container">
+        <div className="hr-loading-spinner">
+          <div className="hr-spinner-ring"></div>
+        </div>
+        <div className="hr-loading-content">
+          <h3 className="hr-loading-text">กำลังโหลด</h3>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
 
   const allNames = [...new Set(data.map(d => stripHtml(d.summary_data?.display_name)).filter(n => n && n !== '-'))];
@@ -268,18 +268,18 @@ if (loading) return (
               if (subKey.includes('น้ำหนัก') || subKey.toLowerCase().includes('weight')) weightVal = String(subVal).replace(/[^0-9.]/g, '');
               if (subKey.includes('ส่วนสูง') || subKey.toLowerCase().includes('height')) heightVal = String(subVal).replace(/[^0-9.]/g, '');
             }
-          } 
+          }
           else if (typeof val === 'string' || typeof val === 'number') {
             const strVal = String(val);
             // 🟢 จัดการกรณีที่รวมมาเป็น String ก้อนเดียว (เช่น "น้ำหนัก 50 กก. | ส่วนสูง 169.8 ซม.")
             if (strVal.includes('น้ำหนัก') && strVal.includes('ส่วนสูง')) {
-               const wMatch = strVal.match(/(?:น้ำหนัก|Weight)[^\d]*([\d.]+)/i);
-               const hMatch = strVal.match(/(?:ส่วนสูง|Height)[^\d]*([\d.]+)/i);
-               if (wMatch) weightVal = wMatch[1];
-               if (hMatch) heightVal = hMatch[1];
+              const wMatch = strVal.match(/(?:น้ำหนัก|Weight)[^\d]*([\d.]+)/i);
+              const hMatch = strVal.match(/(?:ส่วนสูง|Height)[^\d]*([\d.]+)/i);
+              if (wMatch) weightVal = wMatch[1];
+              if (hMatch) heightVal = hMatch[1];
             } else {
-               if (key.includes('น้ำหนัก') || key.toLowerCase().includes('weight')) weightVal = strVal.replace(/[^0-9.]/g, '');
-               if (key.includes('ส่วนสูง') || key.toLowerCase().includes('height')) heightVal = strVal.replace(/[^0-9.]/g, '');
+              if (key.includes('น้ำหนัก') || key.toLowerCase().includes('weight')) weightVal = strVal.replace(/[^0-9.]/g, '');
+              if (key.includes('ส่วนสูง') || key.toLowerCase().includes('height')) heightVal = strVal.replace(/[^0-9.]/g, '');
             }
           }
         }
@@ -303,13 +303,13 @@ if (loading) return (
   });
 
   const timelineEvents = [
-  ...data.map(d => ({
-    type: 'form',
-    date: new Date(d.submitted_at),
-    data: d,
-    clinic_type: d.clinicType || d.clinic_type || 'general'
-  }))
-].sort((a, b) => b.date - a.date);
+    ...data.map(d => ({
+      type: 'form',
+      date: new Date(d.submitted_at),
+      data: d,
+      clinic_type: d.clinicType || d.clinic_type || 'general'
+    }))
+  ].sort((a, b) => b.date - a.date);
 
   const filteredTimeline = timelineEvents.filter(ev => timelineFilter === 'all' || ev.clinic_type === timelineFilter);
   const activeCases = masterCases.filter(mc => mc.status === 'Open');
@@ -402,7 +402,7 @@ if (loading) return (
               const relatedResponse = data.find(d => d.master_case_id === mc.id);
               const actualClinicType = mc.clinicType || mc.clinic_type || relatedResponse?.clinicType || relatedResponse?.clinic_type || 'general';
               const cInfo = CLINIC_INFO[actualClinicType] || CLINIC_INFO.general;
-              
+
               const currentStatus = relatedResponse?.status || "รอติดต่อ (รอดำเนินการ)";
 
               return (
@@ -420,7 +420,7 @@ if (loading) return (
                     </div>
                   </div>
 
-                  
+
                 </div>
               );
             })}
@@ -494,7 +494,7 @@ if (loading) return (
                             — {latestLog.staff} ({new Date(latestLog.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })})
                           </div>
                         </div>
-                        
+
                         <button className="hr-advice-expand-btn" style={{ color: cInfo.color }} onClick={() => setAdviceModal({ isOpen: true, logs: logs, clinicInfo: cInfo })}>
                           ดูประวัติคำแนะนำทั้งหมด ({logs.length})
                         </button>
@@ -506,6 +506,34 @@ if (loading) return (
             )}
           </div>
         )}
+
+       {/* แบนเนอร์แนะนำดาวน์โหลดแอป */}
+        <div className="hr-suth-promo-banner">
+          {/* ฝั่งซ้าย */}
+          <div className="promo-left">
+            <img src="/sutapp/phone.png" alt="SUTH App Phone" className="promo-phone-img" />
+            <div className="promo-text-content">
+            <h2>กรุณาดาวน์โหลด <span className="highlight-orange">SUTH App</span></h2>
+            <p className="promo-desc">เพื่อรับการแจ้งเตือนการนัดหมายและติดตามข้อมูลการเข้ารับบริการได้สะดวกยิ่งขึ้น</p>
+          </div>
+          </div>
+
+          <div className="promo-divider"></div>
+
+          {/* ฝั่งขวา */}
+          <div className="promo-right">
+            <div className="promo-top-content">
+              <img src="/sutapp/qr.png" alt="QR Code" className="promo-qr" />
+              <div className="promo-store-logos">
+                <img src="/sutapp/logo-download.png" alt="Download Buttons" />
+              </div>
+            </div>
+            <button className="download-btn" onClick={() => window.open("https://play.google.com/store/apps/details?id=th.go.suth.app", "_blank")}>
+             <FiDownload style={{ marginRight: '8px' }} /> ดาวน์โหลดเลย
+            </button>
+          </div>
+        </div>
+
 
         <div className="hr-section-label" style={{ marginTop: 40, marginBottom: 12 }}>
           <div className="hr-section-dot" /> ประวัติการเข้ารับบริการ (ไทม์ไลน์)
@@ -542,7 +570,7 @@ if (loading) return (
           {filteredTimeline.map((event, idx) => {
             const cInfo = CLINIC_INFO[event.clinic_type] || CLINIC_INFO.general;
 
-            
+
 
             const record = event.data;
             const sd = record.summary_data || {};
@@ -561,7 +589,7 @@ if (loading) return (
             const hasWeight = sd.weight !== undefined || rawAnswers['น้ำหนัก (กก.)'] !== undefined;
             const hasHeight = sd.height !== undefined || rawAnswers['ส่วนสูง (ซม.)'] !== undefined;
             const hasPhone = sd.phone !== undefined || rawAnswers['เบอร์โทรศัพท์'] !== undefined;
-            
+
             const formQs = formQuestionsMap[record.form_id] || [];
             const currentTab = activeInnerTab[record.id] || 'answers';
 
@@ -602,9 +630,9 @@ if (loading) return (
                       {/* 🟢 TABS ควบคุมข้อมูลในกล่อง */}
                       <div style={{ display: 'flex', gap: '8px', padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                         {scoreResults.length > 0 && (
-                          <button 
+                          <button
                             onClick={() => setActiveInnerTab(prev => ({ ...prev, [record.id]: 'scores' }))}
-                            style={{ 
+                            style={{
                               padding: '6px 12px', borderRadius: '8px', fontSize: '13.5px', fontWeight: 'bold', border: 'none', cursor: 'pointer',
                               background: currentTab === 'scores' ? '#ffffff' : 'transparent',
                               color: currentTab === 'scores' ? '#2563eb' : '#64748b',
@@ -614,9 +642,9 @@ if (loading) return (
                             <FaChartBar /> ผลประเมิน
                           </button>
                         )}
-                        <button 
+                        <button
                           onClick={() => setActiveInnerTab(prev => ({ ...prev, [record.id]: 'answers' }))}
-                          style={{ 
+                          style={{
                             padding: '6px 12px', borderRadius: '8px', fontSize: '13.5px', fontWeight: 'bold', border: 'none', cursor: 'pointer',
                             background: currentTab === 'answers' ? '#ffffff' : 'transparent',
                             color: currentTab === 'answers' ? '#10b981' : '#64748b',
@@ -625,9 +653,9 @@ if (loading) return (
                         >
                           <FiFileText /> คำตอบฟอร์ม
                         </button>
-                        <button 
+                        <button
                           onClick={() => setActiveInnerTab(prev => ({ ...prev, [record.id]: 'editable' }))}
-                          style={{ 
+                          style={{
                             padding: '6px 12px', borderRadius: '8px', fontSize: '13.5px', fontWeight: 'bold', border: 'none', cursor: 'pointer',
                             background: currentTab === 'editable' ? '#ffffff' : 'transparent',
                             color: currentTab === 'editable' ? '#f59e0b' : '#64748b',
@@ -640,7 +668,7 @@ if (loading) return (
 
                       {/* 🟢 เนื้อหาของ TABS */}
                       <div style={{ padding: '20px' }}>
-                        
+
                         {currentTab === 'scores' && scoreResults.length > 0 && (
                           <div className="hr-score-strip" style={{ padding: 0, border: 'none' }}>
                             {scoreResults.map((s, i) => (
@@ -674,45 +702,45 @@ if (loading) return (
                                 {editableQuestions.map((ans, i) => {
                                   const questionLabel = stripHtml(ans.question_title || `ข้อ ${i + 1}`);
                                   return (
-                                    <EditableAnswerField 
-                                      key={ans.question_id || `edit_${i}`} 
-                                      responseId={record.id} 
-                                      questionId={ans.question_id} 
-                                      questionLabel={questionLabel} 
-                                      answerValue={ans.answer_value} 
-                                      type="text" 
-                                      onSave={async (qid, newVal) => { 
+                                    <EditableAnswerField
+                                      key={ans.question_id || `edit_${i}`}
+                                      responseId={record.id}
+                                      questionId={ans.question_id}
+                                      questionLabel={questionLabel}
+                                      answerValue={ans.answer_value}
+                                      type="text"
+                                      onSave={async (qid, newVal) => {
                                         try {
-                                           await updateHistoryResponse(record.id, { 
-                                              field: 'custom_answer', 
-                                              question_title: questionLabel, 
-                                              value: newVal,
-                                              question_id: qid
-                                           });
-                                        } catch(err) {  }
-                    
-                                        setFormAnswers(prev => { 
-                                          const updated = (prev[record.id] || []).map(a => 
-                                             (a.question_id === qid || a.question_title === ans.question_title) 
-                                             ? { ...a, answer_value: newVal } 
-                                             : a
-                                          ); 
-                                          return { ...prev, [record.id]: updated }; 
-                                        }); 
-                                        
+                                          await updateHistoryResponse(record.id, {
+                                            field: 'custom_answer',
+                                            question_title: questionLabel,
+                                            value: newVal,
+                                            question_id: qid
+                                          });
+                                        } catch (err) { }
+
+                                        setFormAnswers(prev => {
+                                          const updated = (prev[record.id] || []).map(a =>
+                                            (a.question_id === qid || a.question_title === ans.question_title)
+                                              ? { ...a, answer_value: newVal }
+                                              : a
+                                          );
+                                          return { ...prev, [record.id]: updated };
+                                        });
+
                                         setData(prevData => prevData.map(item => {
                                           if (item.id === record.id) {
-                                             const sd = { ...item.summary_data };
-                                             if (sd.raw_answers && sd.raw_answers[questionLabel] !== undefined) {
-                                                sd.raw_answers[questionLabel] = newVal;
-                                             }
-                                             return { ...item, summary_data: sd };
+                                            const sd = { ...item.summary_data };
+                                            if (sd.raw_answers && sd.raw_answers[questionLabel] !== undefined) {
+                                              sd.raw_answers[questionLabel] = newVal;
+                                            }
+                                            return { ...item, summary_data: sd };
                                           }
                                           return item;
                                         }));
-                    
-                                        showToast('บันทึกสำเร็จ ✓', 'success'); 
-                                      }} 
+
+                                        showToast('บันทึกสำเร็จ ✓', 'success');
+                                      }}
                                     />
                                   );
                                 })}
@@ -727,7 +755,7 @@ if (loading) return (
                             {allAnswers.map((ans, i) => {
                               const questionLabel = stripHtml(ans.question_title || `ข้อ ${i + 1}`);
                               let displayAns = formatAnswerValue(ans.answer_value);
-                              
+
                               const scoreObj = scoreResults.find(sr => stripHtml(sr.title) === stripHtml(questionLabel));
 
                               let isTableData = false;
@@ -755,7 +783,7 @@ if (loading) return (
                               // วาดตาราง (เหมือนเดิม)
                               if (isTableData) {
                                 const qDef = formQs.find(q => stripHtml(q.title) === stripHtml(questionLabel));
-                                
+
                                 return (
                                   <div key={i} className="hr-answer-row has-table" style={{ display: 'flex', flexDirection: 'column' }}>
                                     <div className="hr-answer-q-wrap" style={{ marginBottom: '10px' }}>
@@ -768,11 +796,11 @@ if (loading) return (
                                           {Object.entries(ans.answer_value).map(([rowKey, rowValue], idx) => {
                                             let displayRowTitle = rowKey;
                                             if (!isNaN(rowKey)) {
-                                                if (qDef && qDef.rows && qDef.rows[rowKey]) {
-                                                    displayRowTitle = stripHtml(qDef.rows[rowKey]);
-                                                } else {
-                                                    displayRowTitle = `แถวที่ ${Number(rowKey) + 1}`;
-                                                }
+                                              if (qDef && qDef.rows && qDef.rows[rowKey]) {
+                                                displayRowTitle = stripHtml(qDef.rows[rowKey]);
+                                              } else {
+                                                displayRowTitle = `แถวที่ ${Number(rowKey) + 1}`;
+                                              }
                                             }
 
                                             return (

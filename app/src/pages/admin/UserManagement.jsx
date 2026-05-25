@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 // 🟢 เพิ่ม getRolePermissions เพื่อดึงสิทธิ์
 import { getUsers, createUser, updateUser, deleteUser, getRolePermissions } from "../../services/api";
-import Sidebar from "../../components/Sidebar";
 import "./UserManagement.css";
 import AddAdminModal from "../../components/AddAdminModal";
 import { FiSearch, FiPlus, FiLayers, FiChevronDown, FiChevronLeft, FiChevronRight } from "react-icons/fi";
@@ -179,8 +178,7 @@ export default function UserManagement() {
 
   return (
     <div className="sum-user-wrapper">
-      <Sidebar activeKey="users" />
-      <div className="sum-user-page">
+<div className="sum-user-page">
         <div className="sum-user-header">
           <h2>จัดการผู้ใช้งาน</h2>
           <button className="sum-add-btn" onClick={() => { setEditingUser(null); setShowModal(true); }}><FiPlus /> เพิ่มผู้ใช้งาน</button>

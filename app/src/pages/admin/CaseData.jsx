@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import Sidebar from "../../components/Sidebar";
 import CaseTable from "../../components/case/CaseTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
 import ExportExcelModal from "../../components/case/ExportExcelModal";
@@ -269,9 +268,9 @@ function CreateCaseModal({ onClose, onSave, clinics = [] }) {
           <button
             className="scd-close-btn"
             onClick={onClose}
-          >
-            <FiX />
-          </button>
+          />
+            
+        
         </div>
 
         <div className="scd-create-case-body">
@@ -463,7 +462,8 @@ export default function CaseData() {
   const [selectedFormId, setSelectedFormId] = useState(initialFormId);
   const [currentFormDetails, setCurrentFormDetails] = useState(null);
   const [responses, setResponses] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [visibleColumns, setVisibleColumns] = useState([]);
   const [showColMenu, setShowColMenu] = useState(false);
@@ -487,33 +487,37 @@ export default function CaseData() {
   }, []);
 
   useEffect(() => {
-    const fetchForms = async () => {
+    const fetchInitialData = async () => {
       try {
-        const clinicRes = await getActiveClinics();
+        const [clinicRes, formsRes] = await Promise.all([
+          getActiveClinics().catch(() => ({ data: { data: [] } })),
+          getForms("latest").catch(() => ({ data: [] }))
+        ]);
+        
         setClinics(clinicRes.data.data || []);
-      } catch (err) {}
-      try {
-        const res = await getForms("latest");
-        setForms(res.data);
+        const fetchedForms = formsRes.data || [];
+        setForms(fetchedForms);
 
         if (initialFormId) {
-          const targetForm = res.data.find(f => f.id === initialFormId);
+          const targetForm = fetchedForms.find(f => f.id === initialFormId);
           if (targetForm) {
             setClinicFilter(targetForm.clinic_type || 'general');
             if (targetForm.status !== 'published') setFormStatusFilter('draft');
           }
-        } else if (res.data.length > 0) {
-          const publishedForms = res.data.filter(f => f.status === 'published');
+        } else if (fetchedForms.length > 0) {
+          const publishedForms = fetchedForms.filter(f => f.status === 'published');
           if (publishedForms.length > 0) {
             setSelectedFormId(publishedForms[0].id);
           } else {
-            setSelectedFormId(res.data[0].id);
+            setSelectedFormId(fetchedForms[0].id);
             setFormStatusFilter('all');
           }
         }
-      } catch (err) { }
+      } finally {
+        setIsInitialSetup(false);
+      }
     };
-    fetchForms();
+    fetchInitialData();
   }, [initialFormId]);
 
   const filteredFormsList = useMemo(() => {
@@ -538,7 +542,13 @@ export default function CaseData() {
 
   useEffect(() => {
     const fetchFormAndResponses = async () => {
-      if (!selectedFormId) return;
+      if (isInitialSetup) return;
+      if (!selectedFormId) {
+        setIsLoading(false);
+        setCurrentFormDetails(null);
+        setResponses([]);
+        return;
+      }
       setIsLoading(true);
       try {
         const [formRes, responseRes] = await Promise.all([
@@ -683,8 +693,7 @@ export default function CaseData() {
 
   return (
     <div className="scd-admin-wrapper">
-      <Sidebar activeKey="case" />
-      <main className="scd-main-content">
+<main className="scd-main-content">
         <div className="scd-risk-container">
 
           <div className="scd-header-flex">
@@ -698,8 +707,8 @@ export default function CaseData() {
                   </span>
                 )}
               </div>
-              <h2 className="scd-main-title" title={currentFormDetails?.title || (filteredFormsList.length === 0 ? "ไม่มีข้อมูลแบบฟอร์ม" : "กำลังโหลด...")}>
-                {currentFormDetails?.title || (filteredFormsList.length === 0 ? "ไม่มีข้อมูลแบบฟอร์ม" : "กำลังโหลด...")}
+              <h2 className="scd-main-title" title={currentFormDetails?.title || (isInitialSetup ? "กำลังโหลด..." : filteredFormsList.length === 0 ? "ไม่มีข้อมูลแบบฟอร์ม" : "กำลังโหลด...")}>
+                {currentFormDetails?.title || (isInitialSetup ? "กำลังโหลด..." : filteredFormsList.length === 0 ? "ไม่มีข้อมูลแบบฟอร์ม" : "กำลังโหลด...")}
               </h2>
             </div>
 
@@ -750,9 +759,11 @@ export default function CaseData() {
               value={selectedFormId}
               onChange={setSelectedFormId}
               options={
-                filteredFormsList.length > 0
-                  ? filteredFormsList.map(f => ({ value: f.id, label: f.title }))
-                  : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
+                isInitialSetup 
+                  ? [{ value: '', label: 'กำลังโหลดแบบฟอร์ม...' }]
+                  : filteredFormsList.length > 0
+                    ? filteredFormsList.map(f => ({ value: f.id, label: f.title }))
+                    : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
               }
               styleClass="scd-select-form scd-filter-form"
               textClass="scd-text-form"
@@ -877,7 +888,7 @@ export default function CaseData() {
             data={filteredData}
             questions={currentFormDetails?.questions || []}
             visibleColumns={visibleColumns}
-            isLoading={isLoading}
+            isLoading={isLoading || isInitialSetup}
             onSelectCase={setSelectedCase}
             viewMode={tableViewMode}
             hasScoring={hasScoring}

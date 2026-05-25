@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../../../components/Sidebar';
 import { getForms, deleteFormInDb, renameFormInDb, updateFormImageOnly, updateFormStatus, updateFormClinicType, duplicateFormInDb, getActiveClinics } from '../../../services/api';
 import './styles/FormManager.css';
 
@@ -286,9 +285,7 @@ const FormManager = () => {
 
   return (
     <div className="fm-admin-layout">
-      <Sidebar activeKey="forms" />
-
-      <main className="fm-main-content">
+<main className="fm-main-content">
         <header className="fm-content-header">
           <h2>จัดการฟอร์ม</h2>
 

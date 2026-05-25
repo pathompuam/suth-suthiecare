@@ -38,7 +38,7 @@
   display: flex;
   min-height: 100vh;
   background: #ffffff;
-  max-width: 100vw; 
+  max-width: 100%; 
 }
 
 .apt-main-content {
@@ -231,6 +231,7 @@
   top: 0;
   left: 0;
   width: 100%;
+  max-width: 100%;
   height: 100%;
   opacity: 0; /* ซ่อนให้โปร่งใส แต่ยังคงทำงานอยู่ */
   cursor: pointer;
@@ -655,9 +656,9 @@
   .apt-select-menu {
     left: 0;
     right: 0;              /* 🔥 กันล้น */
-    width: auto !important;
-    min-width: unset !important;
-    max-width: 100vw;      /* 🔥 จำกัดไม่ให้เกินจอ */
+    width: 100%;
+    min-width: unset;
+    max-width: 100%;      /* 🔥 จำกัดไม่ให้เกินจอ */
     box-sizing: border-box;
   }
 

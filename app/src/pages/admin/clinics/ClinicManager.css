@@ -4,7 +4,7 @@
 .cm-admin-page {
   display: flex;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   overflow: hidden;
   background-color: #f8fafc;
   font-family: 'Noto Sans Thai', sans-serif;
