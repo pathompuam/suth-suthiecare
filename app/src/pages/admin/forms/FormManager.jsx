@@ -9,7 +9,8 @@ import {
   FaImage,
   FaClinicMedical,
   FaExternalLinkAlt,
-  FaTrashAlt
+  FaTrashAlt,
+  FaExclamationTriangle
 } from 'react-icons/fa';
 
 // 🟢 Component สำหรับ Dropdown 
@@ -90,7 +91,7 @@ const FormManager = () => {
   const getClinicLabel = (slug) => {
     if (slug === 'general') return { text: 'ทั่วไป', bg: '#f1f5f9', color: '#475569' };
     const clinic = clinics.find(c => c.slug === slug);
-    if (!clinic) return { text: slug, bg: '#f1f5f9', color: '#475569' };
+    if (!clinic) return { text: slug, bg: '#f1f5f9', color: '#475569', isDeleted: true };
     
     const index = clinics.findIndex(c => c.slug === slug);
     const colorIndex = index % clinicColors.length;
@@ -384,8 +385,18 @@ const FormManager = () => {
                   style={{ zIndex: openMenuId === form.id ? 50 : 1 }}
                 >
                   <div className="fm-card-image-box" style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: clinicInfo.bg, color: clinicInfo.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: clinicInfo.bg, color: clinicInfo.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       {clinicInfo.text}
+                      {clinicInfo.isDeleted && (
+                        <div 
+                          title="คลินิกของฟอร์มนี้เกิดปัญหาหรือถูกลบออก กรุณาเลือกใหม่อีกครั้ง"
+                          style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help' }}
+                        >
+                          {/* สีพื้นหลังดำสำหรับตัวเครื่องหมายตกใจตรงกลาง */}
+                          <div style={{ position: 'absolute', backgroundColor: '#000', width: '4px', height: '8px', top: '4px', zIndex: 0 }}></div>
+                          <FaExclamationTriangle style={{ color: '#fbbf24', fontSize: '14px', position: 'relative', zIndex: 1 }} />
+                        </div>
+                      )}
                     </div>
                     {/* ป้ายกำกับสถานะ */}
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: currentStatus === 'published' ? '#dcfce7' : '#fff3e0', color: currentStatus === 'published' ? '#166534' : '#e65100', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>

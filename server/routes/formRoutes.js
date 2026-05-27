@@ -472,6 +472,7 @@ router.get('/forms/:id/questions', async (req, res) => {
 router.patch('/forms/:id/clinic', async (req, res) => {
   try {
     await db.query('UPDATE forms SET clinic_type = ? WHERE id = ?', [req.body.clinic_type, req.params.id]);
+    formCache.flushAll();
     res.json({ message: 'Clinic updated successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update clinic' });
