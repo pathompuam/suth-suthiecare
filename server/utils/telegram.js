@@ -16,7 +16,7 @@ async function sendTelegramAlert(message, replyMarkup = null) {
   }
   
   try {
-    // 🟢 สร้างก้อนข้อมูลเตรียมส่ง
+    // 🟢 สร้างก้อนข้อมูลเตรียมส่งไป
     const payload = {
       chat_id: TELEGRAM_CHAT_ID,  
       text: message,
