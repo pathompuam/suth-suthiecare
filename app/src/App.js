@@ -3,9 +3,9 @@ import React, { lazy, useEffect, useState } from "react";
 
 import Login from "./pages/login/Login";
 import SutLanding2 from "./pages/sutlanding/SutLanding2";
+import ClinicManager from "./pages/admin/clinics/ClinicManager";
 
 // ✅ Lazy load ทุกหน้าที่เหลือ
-const Home = lazy(() => import("./pages/home/Home"));
 const AssessmentResult = lazy(() => import("./pages/result/AssessmentResult"));
 const Dashboard = lazy(() => import("./pages/admin/dashboard"));
 const FormManager = lazy(() => import("./pages/admin/forms/FormManager"));
@@ -19,6 +19,7 @@ const BannerManagement = lazy(() => import("./pages/admin/BannerManagement"));
 const FormView = lazy(() => import("./pages/assessment/formView/FormView"));
 const HistorySearch = lazy(() => import("./pages/assessment/history/HistorySearch"));
 const HistoryResult = lazy(() => import("./pages/assessment/history/HistoryResult"));
+const AdminLayout = lazy(() => import("./components/AdminLayout"));
 
 const AdminRoute = ({ children }) => {
   const userStr = sessionStorage.getItem("suth_user") || localStorage.getItem("suth_user");
@@ -103,22 +104,25 @@ function App() {
           <Route path="/" element={<SutLanding2 />} />
           <Route path="/login" element={<Login />} />
         
-          <Route path="/assessment" element={<Home />} />
+      
           <Route path="/assessment-result" element={<AssessmentResult />} />
           <Route path="/assessment/:id" element={<FormView />} />
           <Route path="/history" element={<HistorySearch />} />
           <Route path="/history/result" element={<HistoryResult />} />
 
-          <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
-          <Route path="/admin/forms" element={<AdminRoute><FormManager /></AdminRoute>} />
-          <Route path="/admin/forms/create" element={<AdminRoute><FormBuilder /></AdminRoute>} />
-          <Route path="/admin/forms/edit/:id" element={<AdminRoute><FormBuilder /></AdminRoute>} />
-          <Route path="/admin/schedule" element={<AdminRoute><Appointment /></AdminRoute>} />
-          <Route path="/admin/cases" element={<AdminRoute><CaseData /></AdminRoute>} />
-          <Route path="/admin/roles" element={<AdminRoute><RolesPermissions /></AdminRoute>} />
-          <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
-          <Route path="/admin/risk-cases" element={<AdminRoute><RiskCases /></AdminRoute>} />
-          <Route path="/admin/banner" element={<AdminRoute><BannerManagement /></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="forms" element={<FormManager />} />
+            <Route path="forms/create" element={<FormBuilder />} />
+            <Route path="forms/edit/:id" element={<FormBuilder />} />
+            <Route path="schedule" element={<Appointment />} />
+            <Route path="cases" element={<CaseData />} />
+            <Route path="roles" element={<RolesPermissions />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="risk-cases" element={<RiskCases />} />
+            <Route path="banner" element={<BannerManagement />} />
+            <Route path="clinics" element={<ClinicManager />} />
+          </Route>
         </Routes>
     </BrowserRouter>
   );

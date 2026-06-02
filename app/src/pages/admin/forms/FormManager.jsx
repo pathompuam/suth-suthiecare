@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../../../components/Sidebar';
-import { getForms, deleteFormInDb, renameFormInDb, updateFormImageOnly, updateFormStatus, updateFormClinicType, duplicateFormInDb } from '../../../services/api';
+import { getForms, deleteFormInDb, renameFormInDb, updateFormImageOnly, updateFormStatus, updateFormClinicType, duplicateFormInDb, getActiveClinics } from '../../../services/api';
 import './styles/FormManager.css';
 
 import {
@@ -10,15 +9,9 @@ import {
   FaImage,
   FaClinicMedical,
   FaExternalLinkAlt,
-  FaTrashAlt
+  FaTrashAlt,
+  FaExclamationTriangle
 } from 'react-icons/fa';
-
-const CLINIC_LABELS = {
-  general: { text: 'ทั่วไป', bg: '#f1f5f9', color: '#475569' },
-  teenager: { text: 'คลินิกวัยรุ่น', bg: '#e0f2fe', color: '#0284c7' },
-  behavior: { text: 'คลินิกLSM', bg: '#dcfce7', color: '#166534' },
-  sti: { text: 'คลินิกโรคติดต่อฯ', bg: '#fce7f3', color: '#be185d' }
-};
 
 // 🟢 Component สำหรับ Dropdown 
 const CustomDropdown = ({ icon: Icon, value, options, onChange, style, iconStyle, textStyle }) => {
@@ -90,6 +83,26 @@ const FormManager = () => {
   const [isClinicModalOpen, setIsClinicModalOpen] = useState(false);
   const [editingClinicForm, setEditingClinicForm] = useState({ id: null, clinic_type: 'general' });
 
+  // 🟢 เพิ่ม State สำหรับคลินิก
+  const [clinics, setClinics] = useState([]);
+  const clinicColors = ['#e0f2fe', '#dcfce7', '#fce7f3', '#fef3c7', '#e0e7ff', '#f3e8ff'];
+  const clinicTextColors = ['#0284c7', '#166534', '#be185d', '#d97706', '#4338ca', '#7e22ce'];
+
+  const getClinicLabel = (slug) => {
+    if (slug === 'general') return { text: 'ทั่วไป', bg: '#f1f5f9', color: '#475569' };
+    const clinic = clinics.find(c => c.slug === slug);
+    if (!clinic) return { text: slug, bg: '#f1f5f9', color: '#475569', isDeleted: true };
+    
+    const index = clinics.findIndex(c => c.slug === slug);
+    const colorIndex = index % clinicColors.length;
+    
+    return {
+      text: clinic.name,
+      bg: clinicColors[colorIndex],
+      color: clinicTextColors[colorIndex]
+    };
+  };
+
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimer = useRef(null);
 
@@ -106,8 +119,12 @@ const FormManager = () => {
       if (sortBy === 'แก้ไขล่าสุด') sortParam = 'lastModified';
       if (sortBy === 'ชื่อ') sortParam = 'title';
 
-      const response = await getForms(sortParam);
-      setForms(response.data);
+      const [formRes, clinicRes] = await Promise.all([
+        getForms(sortParam),
+        getActiveClinics()
+      ]);
+      setForms(formRes.data);
+      setClinics(clinicRes.data.data || []);
     } catch (error) {
       setForms([]);
     } finally {
@@ -269,9 +286,7 @@ const FormManager = () => {
 
   return (
     <div className="fm-admin-layout">
-      <Sidebar activeKey="forms" />
-
-      <main className="fm-main-content">
+<main className="fm-main-content">
         <header className="fm-content-header">
           <h2>จัดการฟอร์ม</h2>
 
@@ -297,9 +312,7 @@ const FormManager = () => {
                 options={[
                   { value: 'all', label: `ทุกคลินิก (${forms.length})` },
                   { value: 'general', label: 'ทั่วไป' },
-                  { value: 'teenager', label: 'คลินิกวัยรุ่น' },
-                  { value: 'behavior', label: 'คลินิกLSM' },
-                  { value: 'sti', label: 'คลินิกโรคติดต่อฯ' }
+                  ...clinics.map(c => ({ value: c.slug, label: c.name }))
                 ]}
               />
 
@@ -362,7 +375,7 @@ const FormManager = () => {
             {filteredForms.map(form => {
               const currentStatus = form.status || 'draft';
               const clinicType = form.clinic_type || 'general';
-              const clinicInfo = CLINIC_LABELS[clinicType] || CLINIC_LABELS['general'];
+              const clinicInfo = getClinicLabel(clinicType);
 
               return (
                 <div
@@ -372,8 +385,18 @@ const FormManager = () => {
                   style={{ zIndex: openMenuId === form.id ? 50 : 1 }}
                 >
                   <div className="fm-card-image-box" style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: clinicInfo.bg, color: clinicInfo.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', background: clinicInfo.bg, color: clinicInfo.color, padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       {clinicInfo.text}
+                      {clinicInfo.isDeleted && (
+                        <div 
+                          title="คลินิกของฟอร์มนี้เกิดปัญหาหรือถูกลบออก กรุณาเลือกใหม่อีกครั้ง"
+                          style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'help' }}
+                        >
+                          {/* สีพื้นหลังดำสำหรับตัวเครื่องหมายตกใจตรงกลาง */}
+                          <div style={{ position: 'absolute', backgroundColor: '#000', width: '4px', height: '8px', top: '4px', zIndex: 0 }}></div>
+                          <FaExclamationTriangle style={{ color: '#fbbf24', fontSize: '14px', position: 'relative', zIndex: 1 }} />
+                        </div>
+                      )}
                     </div>
                     {/* ป้ายกำกับสถานะ */}
                     <div style={{ position: 'absolute', top: '10px', right: '10px', background: currentStatus === 'published' ? '#dcfce7' : '#fff3e0', color: currentStatus === 'published' ? '#166534' : '#e65100', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -481,9 +504,9 @@ const FormManager = () => {
             <h3>เปลี่ยนประเภทคลินิก</h3>
             <select className="fm-modal-input" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '15px', width: '100%', marginTop: '10px', boxSizing: 'border-box' }} value={editingClinicForm.clinic_type} onChange={(e) => setEditingClinicForm({ ...editingClinicForm, clinic_type: e.target.value })}>
               <option value="general">ทั่วไป (ใช้ร่วมกัน)</option>
-              <option value="teenager">คลินิกวัยรุ่น</option>
-              <option value="behavior">คลินิกLSM</option>
-              <option value="sti">คลินิกโรคติดต่อฯ</option>
+              {clinics.map(c => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
             </select>
             <div className="fm-modal-actions" style={{ marginTop: '20px' }}>
               <button className="fm-btn-cancel" onClick={() => setIsClinicModalOpen(false)}>ยกเลิก</button>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import Sidebar from "../../components/Sidebar";
 import "./BannerManagement.css";
 import { FiChevronLeft, FiChevronRight, FiPlus, FiInfo, FiImage } from "react-icons/fi";
 import AddBannerModal from "../../components/AddBannerModal";
@@ -15,14 +14,22 @@ export default function BannerManagement() {
   const [banners, setBanners] = useState([]);
   const [editingBanner, setEditingBanner] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadBanners();
   }, []);
 
   const loadBanners = async () => {
-    const res = await getBanners();
-    setBanners(res.data);
+    setIsLoading(true);
+    try {
+      const res = await getBanners();
+      setBanners(res.data);
+    } catch (error) {
+      console.error("Error loading banners:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDragEnd = (event) => {
@@ -76,7 +83,8 @@ export default function BannerManagement() {
     try {
       await updateBannerImage(updatedBanner.id, {
         image: updatedBanner.image,
-        filename: updatedBanner.filename
+        filename: updatedBanner.filename,
+        link: updatedBanner.link || ""
       });
       setEditingBanner(null);
       await loadBanners();
@@ -95,16 +103,15 @@ export default function BannerManagement() {
 
   return (
     <div className="bm-wrapper">
-      <Sidebar activeKey="banner" />
-      <div className="bm-page">
+<div className="bm-page">
 
         <div className="bm-header">
-          <h2 className="bm-title" style={{ color: '#1e293b', margin: 0 }}>จัดการภาพแบนเนอร์</h2>
+          <h2 className="bm-title" >จัดการภาพแบนเนอร์</h2>
           <button
             className="bm-add-btn"
             onClick={() => {
               if (isLimitReached) {
-                alert("คุณมีแบนเนอร์ครบ 5 รูปแล้ว กรุณาลบแบนเนอร์เก่าออกก่อนเพิ่มรูปใหม่ค่ะ");
+                alert("คุณมีแบนเนอร์ครบ 5 รูปแล้ว กรุณาลบแบนเนอร์เก่าออกก่อนเพิ่มรูปใหม่");
                 return;
               }
               setShowModal(true);
@@ -118,90 +125,100 @@ export default function BannerManagement() {
           </button>
         </div>
 
-        <div className="bm-content-grid">
+        {isLoading ? (
+          <div className="bm-loading-state">
+            <div className="bm-loading-spinner"></div>
+            <p>กำลังโหลดข้อมูล...</p>
+          </div>
+        ) : (
+          <div className="bm-content-grid">
 
-          {/* --- คอลัมน์ซ้าย: ตารางจัดการแบนเนอร์ --- */}
-          <div className="bm-table-container">
-            <div className="bm-table-card">
+            {/* --- คอลัมน์ซ้าย: ตารางจัดการแบนเนอร์ --- */}
+            <div className="bm-table-container">
+              <div className="bm-table-card">
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '10px' }}>
-                <h3 style={{ margin: 0, fontWeight: '800', color: '#1e293b', fontSize: '20px' }}>รายการภาพ Banner ทั้งหมด</h3>
-                <span style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13px',
-                  color: '#ea580c',
-                  background: '#fffcf9',
-                  border: '1.5px dashed #fed7aa',
-                  padding: '8px 18px',
-                  borderRadius: '100px',
-                  fontWeight: '700',
-                  boxShadow: '0 4px 12px rgba(244, 121, 50, 0.08)'
-                }}>
-                  <FiInfo size={16} strokeWidth={2.5} />
-                  สามารถเพิ่มรูปได้สูงสุด 5 รูป ({banners.length}/5)
-                </span>
-              </div>
-              <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={banners.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th className="bm-col-image">ภาพ</th>
-                        <th className="bm-col-name">ชื่อไฟล์</th>
-                        <th className="bm-col-action">จัดการ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {banners.length === 0 ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '10px' }}>
+                  <h3 style={{ margin: 0, fontWeight: '800', color: '#334155', fontSize: '20px' }}>รายการภาพ Banner ทั้งหมด</h3>
+                  <span style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '13px',
+                    color: '#ea580c',
+                    background: '#fffcf9',
+                    border: '1.5px dashed #fed7aa',
+                    padding: '8px 18px',
+                    borderRadius: '100px',
+                    fontWeight: '700',
+                    boxShadow: '0 4px 12px rgba(244, 121, 50, 0.08)'
+                  }}>
+                    <FiInfo size={16} strokeWidth={2.5} />
+                    สามารถเพิ่มรูปได้สูงสุด 5 รูป ({banners.length}/5)
+                  </span>
+                  <p className="bm-header-hint">
+                    ลากแถวเพื่อเรียงลำดับคลินิก — ลำดับจะแสดงผลบนหน้าเว็บทันที
+                  </p>
+                </div>
+                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={banners.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                    <table>
+                      <thead>
                         <tr>
-                          <td colSpan="3">
-                            <div className="bm-empty-state">
-                              <div className="bm-empty-icon">
-                                <FiImage size={48} strokeWidth={1.5} />
-                              </div>
-                              <h3 className="bm-empty-text">ยังไม่มีข้อมูล Banner</h3>
-                            </div>
-                          </td>
+                          <th className="bm-col-image">ภาพ</th>
+                          <th className="bm-col-name">ชื่อไฟล์</th>
+                          <th className="bm-col-action">จัดการ</th>
                         </tr>
-                      ) : (
-                        banners.map((banner) => (
-                          <SortableBannerRow
-                            key={banner.id}
-                            banner={banner}
-                            onDelete={handleDelete}
-                            onEdit={() => setEditingBanner(banner)}
-                          />
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </SortableContext>
-              </DndContext>
-            </div>
-          </div>
-
-          {/* --- คอลัมน์ขวา: พรีวิวแบนเนอร์ --- */}
-          <div className="bm-preview-container">
-            <div className="bm-preview-card">
-              <h3 className="bm-preview-title">ตัวอย่างบนหน้าจอ</h3>
-              <div className="bm-slider">
-                {banners.length === 0 ? (
-                  <div className="bm-empty">ไม่มีแบนเนอร์</div>
-                ) : (
-                  <>
-                    <img src={banners[currentSlide]?.image} alt="" />
-                    <button onClick={prevSlide} className="bm-slide-btn bm-left"><FiChevronLeft /></button>
-                    <button onClick={nextSlide} className="bm-slide-btn bm-right"><FiChevronRight /></button>
-                  </>
-                )}
+                      </thead>
+                      <tbody>
+                        {banners.length === 0 ? (
+                          <tr>
+                            <td colSpan="3">
+                              <div className="bm-empty-state">
+                                <div className="bm-empty-icon">
+                                  <FiImage size={48} strokeWidth={1.5} />
+                                </div>
+                                <h3 className="bm-empty-text">ยังไม่มีข้อมูล Banner</h3>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          banners.map((banner) => (
+                            <SortableBannerRow
+                              key={banner.id}
+                              banner={banner}
+                              onDelete={handleDelete}
+                              onEdit={() => setEditingBanner(banner)}
+                            />
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </SortableContext>
+                </DndContext>
               </div>
-
             </div>
-          </div>
 
-        </div>
+            {/* --- คอลัมน์ขวา: พรีวิวแบนเนอร์ --- */}
+            <div className="bm-preview-container">
+              <div className="bm-preview-card">
+                <h3 className="bm-preview-title">ตัวอย่างบนหน้าจอ</h3>
+                <div className="bm-slider">
+                  {banners.length === 0 ? (
+                    <div className="bm-empty">ไม่มีแบนเนอร์</div>
+                  ) : (
+                    <>
+                      <img src={banners[currentSlide]?.image} alt="" />
+                      <button onClick={prevSlide} className="bm-slide-btn bm-left"><FiChevronLeft /></button>
+                      <button onClick={nextSlide} className="bm-slide-btn bm-right"><FiChevronRight /></button>
+                    </>
+                  )}
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
       </div>
 
       {showModal && (

@@ -101,8 +101,7 @@ to { opacity: 1; transform: translateY(0) scale(1); }
 .hr-advice-meta { font-size: 11px; color: var(--gray-500); text-align: right; }
 .hr-advice-expand-btn { background: none; border: none; font-size: 11px; font-weight: 700; opacity: 0.8; cursor: pointer; width: 100%; text-align: center; padding-top: 8px; margin-top: 8px; border-top: 1px dashed rgba(0,0,0,0.1); }
 .hr-advice-expand-btn:hover { opacity: 1; text-decoration: underline; }
-.hr-advice-toggle-btn-new { background: none; border: none; color: #007bff !important; 
-    font-weight: 700; font-size: 14.5px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 10px 0 0 0; width: fit-content; transition: all 0.2s ease; z-index: 2; }
+.hr-advice-toggle-btn-new { background: none; border: none; color: #007bff !important; font-weight: 700; font-size: 14.5px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 10px 0 0 0; width: fit-content; transition: all 0.2s ease; z-index: 2; }
 .hr-advice-toggle-btn-new:hover { color: #0056b3 !important; text-decoration: underline; transform: translateY(1px); }
 .hr-advice-toggle-btn-new svg { display: inline-block; flex-shrink: 0; transition: transform 0.2s; }
 /* =========================================
@@ -256,7 +255,7 @@ to { opacity: 1; transform: translateY(0) scale(1); }
             กำลังโหลด และ ไม่พบข้อมูล
 =====================================*/
 .hr-loading-screen, .hr-empty-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--gray-50); z-index: 10000; font-family: var(--font-th); }
-.hr-loading-container, .hr-empty-container { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 45px 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-radius: 32px; border: 1px solid white; box-shadow: var(--shadow-xl); width: min(350px, 90vw); animation: hrPopIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.hr-loading-container, .hr-empty-container { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 45px 40px; background: transparent ; backdrop-filter: none ; border-radius: 32px; border: none; box-shadow: none; animation: hrPopIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
 /* 🌀 Loading Spinner (แบบ Minimal ที่ปรับสีใหม่) */
 .hr-loading-spinner { position: relative; width: 70px; height: 70px; margin-bottom: 24px; }
 .hr-spinner-ring { position: absolute; inset: 0; border: 4px solid var(--gray-100); border-top: 4px solid var(--theme-green-500); border-left: 4px solid var(--theme-orange-400); border-radius: 50%; animation: hrRotate 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
@@ -265,7 +264,7 @@ to { opacity: 1; transform: translateY(0) scale(1); }
 .hr-empty-circle { position: absolute; inset: 0; background: var(--theme-orange-50); border-radius: 50%; animation: hrPulse 2s infinite ease-in-out; }
 .hr-empty-icon-main { font-size: 56px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); }
 /* Typography */
-.hr-loading-text, .hr-empty-title { font-size: 20px; font-weight: 800; color: var(--gray-800); margin-bottom: 8px; letter-spacing: -0.5px; }
+.hr-loading-text, .hr-empty-title { font-size: 20px; font-weight: 800; color: #64748b; margin-bottom: 8px; letter-spacing: -0.5px; }
 /* Buttons (สำหรับหน้า Empty) */
 .hr-empty-refresh-btn { margin-top: 24px; background: white; color: var(--gray-600); border: 1.5px solid var(--gray-200); padding: 10px 24px; border-radius: 100px; font-weight: 700; cursor: pointer; transition: 0.3s; }
 .hr-empty-refresh-btn:hover { background: var(--gray-50); color: var(--theme-orange-600); border-color: var(--theme-orange-200); transform: translateY(-2px); }
@@ -323,16 +322,17 @@ to { opacity: 1; transform: scale(1); }
 .hr-active-case-icon { width: 36px; height: 36px; }
 .hr-active-case-title { font-size: 15px; }
 .hr-upcoming-appt-box { padding: 10px; gap: 10px; }
-.hr-trend-clinic-dot { width: 8px; height: 8px; min-width: 8px; /* 🔥 กันโดนบีบ */
-  min-height: 8px; /* 🔥 กันโดนบีบ */
-  border-radius: 50%; flex-shrink: 0; /* 🔥 ตัวสำคัญ: ห้ามย่อ */ }
-/* 👁 ปุ่มดู (eye) */
+.hr-trend-clinic-dot { width: 8px; height: 8px; min-width: 8px; min-height: 8px; border-radius: 50%; flex-shrink: 0; }
 .hr-eye-btn { position: absolute; right: 10px; bottom: 10px; transform: none; }
-/* ✏️ ปุ่มแก้ไข */
 .hr-edit-btn,
 .hr-edit-btn--sm { position: absolute; right: 10px; bottom: 10px; }
 .hr-answer-row,
-.hr-field { position: relative; /* 🔥 ตัวนี้ห้ามลืม */ }
+.hr-field { position: relative; }
+.hr-suth-promo-banner { flex-direction: column; text-align: center; padding: 15px; }
+.promo-left { flex-direction: column; gap: 10px; margin-bottom: 15px; }
+.promo-phone-img { width: 120px; margin-bottom: 5px; }
+.promo-divider { display: none; }
+.promo-right { width: 100%; gap: 10px; }
  }
 @media (max-width: 400px) {
  .hr-hero { padding: 16px 14px; border-radius: 16px; }
@@ -341,6 +341,27 @@ to { opacity: 1; transform: scale(1); }
 .hr-score-chip { min-width: 90px; }
 .hr-btn-new-assess { font-size: 13px; padding: 10px 16px; }
 .hr-avatar { width: 60px; height: 60px; font-size: 24px; }
+.hr-suth-promo-banner {
+    flex-direction: column;   
+    text-align: center;        
+    padding: 15px;             
+  }
+  .promo-left {
+    flex-direction: column;    
+    gap: 10px;                 
+    margin-bottom: 15px;     
+  }
+  .promo-phone-img {
+    width: 120px;             
+    margin-bottom: 5px;
+  }
+  .promo-divider {
+    display: none;            
+  }
+  .promo-right {
+    width: 100%;               
+    gap: 10px;
+  }
  }
 /* =========================================
    QA TABLE IN HISTORY RESULT
@@ -359,35 +380,47 @@ to { opacity: 1; transform: scale(1); }
    UX/UI ENHANCEMENTS
 ========================================= */
 /* 💡 1. STICKY TIMELINE FILTER (เมนูตัวกรองเลื่อนตามจอ) */
-.hr-timeline-filter { position: sticky; top: 70px; /* ระยะห่างจากขอบบนจอ (เผื่อ Navbar) */
-  z-index: 50; /* ให้อยู่เหนือ Timeline เสมอ */
-  background: rgba(248, 250, 252, 0.95); /* สีพื้นหลังโปร่งแสงนิดๆ */
-  backdrop-filter: blur(8px); /* เบลอพื้นหลังให้ดูหรูหรา */
-  padding: 12px 10px 12px 0; margin: -10px 0 20px 0; border-bottom: 1px solid var(--gray-200); /* เพิ่มเส้นขอบล่างบางๆ */ }
+.hr-timeline-filter { position: sticky; top: 70px; 
+  z-index: 50; 
+  background: rgba(248, 250, 252, 0.95);
+  backdrop-filter: blur(8px); 
+  padding: 12px 10px 12px 0; margin: -10px 0 20px 0; border-bottom: 1px solid var(--gray-200); }
 /* ป้องกันไม่ให้แอนิเมชันของเดิมมากระทบ Sticky */
 .hr-timeline-filter { animation: none !important; opacity: 1 !important; }
 /* 💡 2. VISUAL HIERARCHY (การจัดลำดับความสำคัญของสายตาในคำตอบ) */
 .hr-answer-row { align-items: flex-start; }
-/* สีคำถาม (ให้อ่อนลงและตัวบางลง) */
-.hr-answer-q { font-size: 13.5px !important; color: var(--gray-500) !important; /* เปลี่ยนเป็นสีเทากลาง */
+.hr-answer-q { font-size: 13.5px !important; color: var(--gray-500) !important; 
   font-weight: 500 !important; line-height: 1.5; }
-/* ลูกศรคั่นคำถาม-คำตอบ (ให้อ่อนลง) */
 .hr-answer-sep { color: var(--gray-300) !important; }
-/* สีคำตอบ (ให้เข้มขึ้นและเด่นชัด) */
-.hr-answer-v { font-size: 14.5px !important; color: var(--gray-900) !important; /* เปลี่ยนเป็นสีเกือบดำ */
+.hr-answer-v { font-size: 14.5px !important; color: var(--gray-900) !important; 
   font-weight: 700 !important; }
 /* วงกลมตัวเลขข้อ (ให้อ่อนลงจะได้ไม่แย่งซีนคำตอบ) */
 .hr-answer-num { background: var(--gray-100) !important; color: var(--gray-400) !important; }
-/* 💡 3. HORIZONTAL SCROLL FOR TABLES (ตารางเลื่อนแนวนอนบนมือถือ) */
-.hr-table-container { overflow-x: auto; /* เปิดให้ตารางเลื่อนซ้ายขวาได้ */
+.hr-table-container { overflow-x: auto; 
   scrollbar-width: thin; }
 .hr-table-container::-webkit-scrollbar { height: 6px; }
 .hr-table-container::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 4px; }
-.hr-table { min-width: 400px; /* บังคับความกว้างขั้นต่ำของตาราง */ }
+.hr-table { min-width: 400px;  }
 @media (max-width: 600px) {
- .hr-timeline-filter { top: 60px; /* ปรับระยะบนมือถือ */
+ .hr-timeline-filter { top: 60px; 
     padding-left: 10px; }
 /* ให้ตารางคำตอบบนมือถือเลื่อนได้ ไม่ดันจอแตก */
   .hr-answer-row.has-table { padding-right: 0; }
 .hr-table-container { border-radius: 6px 0 0 6px; border-right: none; }
  }
+
+/* แบนเนอร์ SUTH App  */
+.hr-suth-promo-banner { display: flex; align-items: center; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #fed7aa; border-radius: 20px; padding: 10px 30px; margin: 0 ; width: 100%; color: #7c2d12; flex: 1; box-sizing: border-box; }
+.promo-text h2 { font-size: 20px; margin: 0; }
+.highlight-orange { color: #ea580c; font-weight: 800; }
+.promo-left { flex: 2; display: flex; align-items: center; gap: 15px; }
+.promo-phone-img { width: 160px; height: auto; flex-shrink: 0; }
+.promo-text-content { display: flex; flex-direction: column; justify-content: center; }
+.promo-text-content h2 { margin-top: 0; font-size: 22px; margin-bottom: 5px; }
+.promo-divider { width: 1px; height: 120px; background: #fdba74; margin: 0 20px; }
+.promo-right { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; padding: 10px; }
+.promo-top-content { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+.promo-qr { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; }
+.promo-store-logos img { height: 100px; width: auto; }
+.download-btn { display: flex; width: 100%; max-width: 180px; padding: 6px 0; justify-content: center; align-items: center; background: #ea580c; color: white; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: -5px; text-align: center }
+.download-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(234, 88, 12, 0.4); background: #c2410c; }

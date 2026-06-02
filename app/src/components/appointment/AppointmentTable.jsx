@@ -1,4 +1,5 @@
 import "./AppointmentTable.css";
+import { FiCalendar } from "react-icons/fi";
 
 export default function AppointmentTable({ appointments = [], isLoading, onSelectCase, onUpdateApptStatus }) {
 
@@ -22,69 +23,19 @@ export default function AppointmentTable({ appointments = [], isLoading, onSelec
 
   if (isLoading) {
     return (
-      <div className="aptt-wrapper-card">
-        <div className="aptt-scroll-container">
-          <table className="aptt-main-table">
-            <thead>
-              <tr>
-                <th className="aptt-col-queue">ลำดับ</th>
-                <th className="aptt-col-case">Case ID</th>
-                <th className="aptt-col-name">ชื่อผู้รับบริการ</th>
-                <th className="aptt-col-age">อายุ</th>
-                <th className="aptt-col-service">บริการ</th>
-                <th className="aptt-col-date">วันนัด</th>
-                <th className="aptt-col-appt-status">สถานะนัด</th>
-                <th className="aptt-col-risk">ความเสี่ยง</th>
-                <th className="aptt-col-phone">เบอร์ติดต่อ</th>
-                <th className="aptt-col-note">หมายเหตุ</th>
-                <th className="aptt-col-status">สถานะเคส</th>
-                <th className="aptt-col-action">จัดการคิว</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan="12" className="aptt-empty-state">
-                  <div className="aptt-spinner"></div>
-                  กำลังโหลดข้อมูล...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div className="aptt-wrapper-card aptt-empty-state" style={{ minHeight: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', border: '2px dashed #e2e8f0', boxShadow: 'none' }}>
+        <div className="aptt-spinner"></div>
+        กำลังโหลดข้อมูล...
       </div>
     );
   }
 
   if (activeAppointments.length === 0) {
     return (
-      <div className="aptt-wrapper-card">
-        <div className="aptt-scroll-container">
-          <table className="aptt-main-table">
-            <thead>
-              <tr>
-                <th className="aptt-col-queue">ลำดับ</th>
-                <th className="aptt-col-case">Case ID</th>
-                <th className="aptt-col-name">ชื่อผู้รับบริการ</th>
-                <th className="aptt-col-age">อายุ</th>
-                <th className="aptt-col-service">บริการ</th>
-                <th className="aptt-col-date">วันนัด</th>
-                <th className="aptt-col-appt-status">สถานะนัด</th>
-                <th className="aptt-col-risk">ความเสี่ยง</th>
-                <th className="aptt-col-phone">เบอร์ติดต่อ</th>
-                <th className="aptt-col-note">หมายเหตุ</th>
-                <th className="aptt-col-status">สถานะเคส</th>
-                <th className="aptt-col-action">จัดการคิว</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan="12" className="aptt-empty-state">
-                  ไม่พบข้อมูลนัดหมายในช่วงเวลาที่เลือก (หรือเคสถูกปิดไปแล้ว)
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div className="aptt-wrapper-card aptt-empty-state" style={{ minHeight: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', border: '2px dashed #e2e8f0', boxShadow: 'none' }}>
+        <FiCalendar style={{ fontSize: '48px', color: '#cbd5e1', marginBottom: '16px' }} />
+        <h3 style={{ fontSize: '18px', color: '#475569', margin: '0 0 8px 0', fontWeight: 'bold' }}>ไม่มีข้อมูลในขณะนี้</h3>
+        <p style={{ fontSize: '15px', color: '#94a3b8', margin: 0, fontWeight: 'normal' }}>ยังไม่มีข้อมูลในคลินิกนี้ หรือในช่วงเวลาที่เลือก</p>
       </div>
     );
   }

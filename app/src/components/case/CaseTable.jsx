@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { FiClock, FiAlertCircle, FiUser, FiActivity, FiList, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import "./CaseTable.css";
 
-export default function CaseTable({ data = [], questions = [], visibleColumns = [], isLoading, onSelectCase, viewMode = 'master', hasScoring = true }) {
+export default function CaseTable({ data = [], questions = [], visibleColumns = [], isLoading, onSelectCase, viewMode = 'master', hasScoring = true, staffOptions = [], ...props}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-
+  
   useEffect(() => { setCurrentPage(1); }, [data]);
-
+  
   const stripHtml = (html) => {
     if (html === undefined || html === null) return '';
     if (typeof html !== 'string') return String(html);
@@ -154,7 +154,15 @@ export default function CaseTable({ data = [], questions = [], visibleColumns = 
 
                   {viewMode === 'master' ? (
                     <>
-                      <td className="td-action"><span className="action-badge">{row.form_title || "ส่งแบบฟอร์มประเมิน"}</span></td>
+                      <td className="td-action">
+                        <span className="action-badge">
+                          {
+                            row.case_source === "walkin"
+                              ? "บันทึกโดยเจ้าหน้าที่"
+                              : (row.form_title || "ส่งแบบฟอร์มประเมิน")
+                          }
+                        </span>
+                      </td>
                       <td className="td-center">{getStatusBadge(row.status)}</td>
                       {showMasterRiskCol && <td className="td-center">{getRiskBadge(riskToDisplay)}</td>}
                     </>

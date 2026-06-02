@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import CaseTable from "../../components/case/CaseTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
-import { getForms, getChartData, getFormById, getDashboardSettings, saveDashboardSettings, getMasterCaseStats, getRecentCases } from "../../services/api";
+import { getForms, getChartData, getFormById, getDashboardSettings, saveDashboardSettings, getMasterCaseStats, getRecentCases, getActiveClinics } from "../../services/api";
 import SystemEvaluationWidget from "../../components/dashboard/SystemEvaluationWidget";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
-import Sidebar from '../../components/Sidebar';
 import './dashboard.css';
 import AddChartModal from "../../components/AddChartModal";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -25,7 +24,7 @@ const COLORS = [
   "#9BF6FF", "#CAFFBF", "#FDFFB6", "#FFD6A5", "#E4C1F9"
 ];
 
-function StatBoxModern({ icon: Icon, label, value, urgent, color, bgColor }) {
+function StatBoxModern({ icon: Icon, label, value, urgent, color, bgColor, isLoading }) {
   return (
     <div
       className={`stat-box-modern ${urgent ? "urgent" : ""}`}
@@ -38,7 +37,11 @@ function StatBoxModern({ icon: Icon, label, value, urgent, color, bgColor }) {
         </div>
         <span className="stat-modern-label" style={{ color: urgent ? '#b91c1c' : '#475569', fontWeight: 700 }}>{label}</span>
       </div>
-      <span className="stat-modern-value" style={{ color: urgent ? '#ef4444' : '#1e293b' }}>{value}</span>
+      {isLoading ? (
+        <div className="db-stat-skeleton"></div>
+      ) : (
+        <span className="stat-modern-value" style={{ color: urgent ? '#ef4444' : '#1e293b' }}>{value}</span>
+      )}
     </div>
   );
 }
@@ -88,6 +91,7 @@ const CustomDropdown = ({ icon: Icon, value, options, onChange, style, iconStyle
 export default function Dashboard() {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
+  const [clinics, setClinics] = useState([]);
 
   const [masterCaseStats, setMasterCaseStats] = useState({
     totalActive: 0, newToday: 0, highRisk: 0, closed: 0,
@@ -96,6 +100,8 @@ export default function Dashboard() {
     bloodTestNegative: 0, bloodTestPositive: 0,
     prepWithBlood: 0, prepWithoutBlood: 0
   });
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [statsRefetchTrigger, setStatsRefetchTrigger] = useState(0);
 
   const [chartToDelete, setChartToDelete] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,8 +117,10 @@ export default function Dashboard() {
   const [selectedCase, setSelectedCase] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
+  // 🟢 1. เพิ่ม State นี้เพื่อกั้นการโหลดข้อมูลก่อนเวลาอันควร
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
   const charts = useMemo(() => chartsByForm[selectedFormId] || [], [chartsByForm, selectedFormId]);
+
 
   const filteredForms = useMemo(() => {
     let list = forms;
@@ -128,7 +136,9 @@ export default function Dashboard() {
   }, [forms, selectedClinic, formStatusFilter]);
 
   useEffect(() => {
+    if (isInitialSetup) return; // 🟢 3.4 สั่งให้หยุดรอ
     const fetchMasterCaseStats = async () => {
+      setIsStatsLoading(true);
       try {
         const res = await getMasterCaseStats(selectedClinic, selectedFormId);
         if (res.data && typeof res.data === 'object' && !res.data.error) {
@@ -136,19 +146,23 @@ export default function Dashboard() {
         }
       } catch (err) {
 
+      } finally {
+        setIsStatsLoading(false);
       }
     };
     fetchMasterCaseStats();
-  }, [selectedClinic, selectedCase, selectedFormId]);
+  }, [selectedClinic, selectedFormId, statsRefetchTrigger, isInitialSetup]); // 🟢 3.3 เพิ่ม isInitialSetup เป็น dependency
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [formRes, settingsRes] = await Promise.all([
+        const [formRes, settingsRes, clinicRes] = await Promise.all([
           getForms("latest"),
-          getDashboardSettings()
+          getDashboardSettings(),
+          getActiveClinics()
         ]);
         setForms(formRes.data);
+        setClinics(clinicRes.data.data || []);
         const savedSettings = settingsRes.data;
 
         if (savedSettings?.last_selected_form_id) {
@@ -166,7 +180,11 @@ export default function Dashboard() {
             }
           }
         }
-      } catch (err) { }
+      } catch (err) { 
+      } finally {
+        // 🟢 2. โหลดตั้งค่าเริ่มต้นเสร็จแล้ว ปลดล็อคได้!
+        setIsInitialSetup(false); 
+      }
     };
     loadInitialData();
   }, []);
@@ -245,14 +263,13 @@ export default function Dashboard() {
         const res = await getRecentCases(selectedClinic);
         setCases(res.data);
       } catch (err) {
-
         setCases([]);
       } finally {
         setIsLoading(false);
       }
     };
     fetchRecentCasesForClinic();
-  }, [selectedClinic, selectedCase]);
+  }, [selectedClinic]);
 
   const handleFormChange = useCallback(async (newFormId) => {
     setSelectedFormId(newFormId);
@@ -335,8 +352,7 @@ export default function Dashboard() {
 
   return (
     <div className="admin-page">
-      <Sidebar />
-      <main className="admin-content">
+<main className="admin-content">
         <header className="content-header">
           <h1>แดชบอร์ด</h1>
           <div className="dashboard-filters">
@@ -363,13 +379,15 @@ export default function Dashboard() {
               <CustomDropdown
                 icon={FiLayers}
                 value={selectedClinic}
-                onChange={setSelectedClinic}
+                onChange={(val) => {
+                  setSelectedClinic(val);
+                  setIsLoading(true);
+                  setIsStatsLoading(true);
+                }}
                 options={[
                   { value: 'all', label: 'ทุกคลินิก (All)' },
                   { value: 'general', label: 'ทั่วไป' },
-                  { value: 'teenager', label: 'คลินิกวัยรุ่น' },
-                  { value: 'behavior', label: 'คลินิกLSM' },
-                  { value: 'sti', label: 'คลินิกโรคติดต่อ' }
+                  ...clinics.map(c => ({ value: c.slug, label: c.name }))
                 ]}
               />
             </div>
@@ -379,7 +397,12 @@ export default function Dashboard() {
               <CustomDropdown
                 icon={FiLayers}
                 value={selectedFormId}
-                onChange={(val) => { if (val) handleFormChange(val); }}
+                onChange={(val) => { 
+                  if (val) {
+                    handleFormChange(val);
+                    setIsStatsLoading(true);
+                  }
+                }}
                 options={
                   forms.length > 0 ? (
                     filteredForms.length > 0
@@ -439,7 +462,13 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="main-dashboard-container">
+        {isInitialSetup ? (
+          <div className="db-loading-state">
+            <div className="db-loading-spinner"></div>
+            <p>กำลังโหลดข้อมูล...</p>
+          </div>
+        ) : (
+          <div className="main-dashboard-container">
 
           {selectedClinic === 'sti' ? (
             <div className="sti-dashboard-wrapper">
@@ -464,9 +493,9 @@ export default function Dashboard() {
               </div>
 
               <div className="sti-stat-row">
-                <StatBoxModern icon={FiActivity} label="เคสใหม่วันนี้" value={(masterCaseStats?.newToday || 0).toString().padStart(2, '0')} color="#3b82f6" />
-                <StatBoxModern icon={FiBriefcase} label="เคสที่รอติดต่อกลับ" value={(masterCaseStats?.waitingContact || 0).toString().padStart(2, '0')} color="#f59e0b" />
-                <StatBoxModern icon={FiAlertCircle} label="เคสเสี่ยงสูง (ฉุกเฉิน)" value={(masterCaseStats?.highRisk || 0).toString().padStart(2, '0')} color="#ef4444" urgent />
+                <StatBoxModern isLoading={isStatsLoading} icon={FiActivity} label="เคสใหม่วันนี้" value={(masterCaseStats?.newToday || 0).toString().padStart(2, '0')} color="#3b82f6" />
+                <StatBoxModern isLoading={isStatsLoading} icon={FiBriefcase} label="เคสที่รอติดต่อกลับ" value={(masterCaseStats?.waitingContact || 0).toString().padStart(2, '0')} color="#f59e0b" />
+                <StatBoxModern isLoading={isStatsLoading} icon={FiAlertCircle} label="เคสเสี่ยงสูง (ฉุกเฉิน)" value={(masterCaseStats?.highRisk || 0).toString().padStart(2, '0')} color="#ef4444" urgent />
               </div>
 
               <div className="sti-stat-row">
@@ -489,28 +518,28 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                <StatBoxModern icon={FiPlusSquare} label="รับยา PrEP (เจาะเลือดที่นี่)" value={(masterCaseStats?.prepWithBlood || 0).toString().padStart(2, '0')} color="#8b5cf6" />
-                <StatBoxModern icon={FiShield} label="รับยา PrEP (มีผลเลือดมา)" value={(masterCaseStats?.prepWithoutBlood || 0).toString().padStart(2, '0')} color="#10b981" />
+                <StatBoxModern isLoading={isStatsLoading} icon={FiPlusSquare} label="รับยา PrEP (เจาะเลือดที่นี่)" value={(masterCaseStats?.prepWithBlood || 0).toString().padStart(2, '0')} color="#8b5cf6" />
+                <StatBoxModern isLoading={isStatsLoading} icon={FiShield} label="รับยา PrEP (มีผลเลือดมา)" value={(masterCaseStats?.prepWithoutBlood || 0).toString().padStart(2, '0')} color="#10b981" />
               </div>
 
               <div className="sti-stat-row">
-                <StatBoxModern icon={FiArrowRight} label="ส่งต่อ Safe Clinic" value={(masterCaseStats?.forwardSafeClinic || 0).toString().padStart(2, '0')} color="#ec4899" />
-                <StatBoxModern icon={FiArchive} label="เคสที่ปิดแล้ว (Closed)" value={(masterCaseStats?.closed || 0).toString().padStart(2, '0')} color="#64748b" />
+                <StatBoxModern isLoading={isStatsLoading} icon={FiArrowRight} label="ส่งต่อ Safe Clinic" value={(masterCaseStats?.forwardSafeClinic || 0).toString().padStart(2, '0')} color="#ec4899" />
+                <StatBoxModern isLoading={isStatsLoading} icon={FiArchive} label="เคสที่ปิดแล้ว (Closed)" value={(masterCaseStats?.closed || 0).toString().padStart(2, '0')} color="#64748b" />
               </div>
             </div>
           ) : selectedClinic === 'behavior' ? (
             <div className="stats-grid">
-              <StatBoxModern icon={FiUsers} label="ผู้ลงทะเบียนทั้งหมด" value={((masterCaseStats?.totalActive || 0) + (masterCaseStats?.closed || 0)).toString().padStart(2, '0')} color="#14b8a6" />
-              <StatBoxModern icon={FiActivity} label="เคสใหม่วันนี้" value={(masterCaseStats?.newToday || 0).toString().padStart(2, '0')} color="#3b82f6" />
-              <StatBoxModern icon={FiBriefcase} label="เคสที่รอติดต่อกลับ" value={(masterCaseStats?.waitingContact || 0).toString().padStart(2, '0')} color="#f59e0b" />
-              <StatBoxModern icon={FiArchive} label="เคสที่ปิดแล้ว (Closed)" value={(masterCaseStats?.closed || 0).toString().padStart(2, '0')} color="#64748b" />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiUsers} label="ผู้ลงทะเบียนทั้งหมด" value={((masterCaseStats?.totalActive || 0) + (masterCaseStats?.closed || 0)).toString().padStart(2, '0')} color="#14b8a6" />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiActivity} label="เคสใหม่วันนี้" value={(masterCaseStats?.newToday || 0).toString().padStart(2, '0')} color="#3b82f6" />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiBriefcase} label="เคสที่รอติดต่อกลับ" value={(masterCaseStats?.waitingContact || 0).toString().padStart(2, '0')} color="#f59e0b" />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiArchive} label="เคสที่ปิดแล้ว (Closed)" value={(masterCaseStats?.closed || 0).toString().padStart(2, '0')} color="#64748b" />
             </div>
           ) : (
             <div className="stats-grid">
-              <StatBoxModern icon={FiUsers} label="เคสที่กำลังดูแล (Active)" value={(masterCaseStats?.totalActive || 0).toString().padStart(2, '0')} color="#14b8a6" />
-              <StatBoxModern icon={FiActivity} label="เคสใหม่วันนี้" value={(masterCaseStats?.newToday || 0).toString().padStart(2, '0')} color="#3b82f6" />
-              <StatBoxModern icon={FiAlertCircle} label="เคสที่มีความเสี่ยงสูง" value={(masterCaseStats?.highRisk || 0).toString().padStart(2, '0')} color="#ef4444" urgent />
-              <StatBoxModern icon={FiArchive} label="ปิดเคสแล้ว (Closed)" value={(masterCaseStats?.closed || 0).toString().padStart(2, '0')} color="#64748b" />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiUsers} label="เคสที่กำลังดูแล (Active)" value={(masterCaseStats?.totalActive || 0).toString().padStart(2, '0')} color="#14b8a6" />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiActivity} label="เคสใหม่วันนี้" value={(masterCaseStats?.newToday || 0).toString().padStart(2, '0')} color="#3b82f6" />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiAlertCircle} label="เคสที่มีความเสี่ยงสูง" value={(masterCaseStats?.highRisk || 0).toString().padStart(2, '0')} color="#ef4444" urgent />
+              <StatBoxModern isLoading={isStatsLoading} icon={FiArchive} label="ปิดเคสแล้ว (Closed)" value={(masterCaseStats?.closed || 0).toString().padStart(2, '0')} color="#64748b" />
             </div>
           )}
 
@@ -574,10 +603,34 @@ export default function Dashboard() {
                 questions={currentFormDetails?.questions || []}
                 visibleColumns={visibleColumns}
                 isLoading={isLoading}
-                onSelectCase={setSelectedCase}
+                onSelectCase={(c) => {
+                  setSelectedCase(c);
+                }}
               />
             </div>
-            {selectedCase && <CaseDetailModal data={selectedCase} onClose={() => setSelectedCase(null)} />}
+            {selectedCase && (
+              <CaseDetailModal
+                data={selectedCase}
+                onClose={() => {
+                  setSelectedCase(null);
+                }}
+                onCaseUpdated={(updatedCase) => {
+                  const updateFn = prev => prev.map(r => {
+                    if (r.id === updatedCase.id || (r.master_case_id && updatedCase.master_case_id && r.master_case_id === updatedCase.master_case_id)) {
+                      return { ...r, ...updatedCase };
+                    }
+                    return r;
+                  });
+                  setCases(updateFn);
+                  setStatsRefetchTrigger(prev => prev + 1);
+                }}
+                onCaseDeleted={(deletedId) => {
+                  setCases(prev => prev.filter(r => r.id !== deletedId));
+                  setSelectedCase(null);
+                  setStatsRefetchTrigger(prev => prev + 1);
+                }}
+              />
+            )}
           </section>
 
           <hr className="divider" />
@@ -588,6 +641,7 @@ export default function Dashboard() {
           </section>
 
         </div>
+        )}
 
         {chartToDelete && (
           <div className="modal-overlay">

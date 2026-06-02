@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import Sidebar from "../../components/Sidebar";
-
 import AppointmentTable from "../../components/appointment/AppointmentTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
 
@@ -9,7 +7,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import thLocale from "@fullcalendar/core/locales/th";
 
-import { getFormResponses, getServices, getForms, getCaseAppointments, updateAppointmentStatus } from "../../services/api"; 
+import { getFormResponses, getServices, getForms, getCaseAppointments, updateAppointmentStatus, getActiveClinics } from "../../services/api"; 
 
 import { FiCalendar, FiList, FiLayers, FiActivity, FiChevronDown, FiSearch } from "react-icons/fi";
 import "./Appointment.css";
@@ -90,9 +88,11 @@ export default function Appointment() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [servicesList, setServicesList] = useState([]);
+  const [clinics, setClinics] = useState([]);
   const [selectedCase, setSelectedCase] = useState(null);
 
   // 🟢 State สำหรับจัดการ Popup ลอยของปฏิทิน
@@ -180,28 +180,40 @@ export default function Appointment() {
   }, [forms.length, filteredForms, selectedFormId]); 
 
   useEffect(() => {
+    if (isInitialSetup) return;
+    if (!selectedFormId) {
+      setIsLoading(false);
+      setAppointments([]);
+      return;
+    }
     fetchAppointments(selectedFormId);
-  }, [selectedFormId, fetchAppointments]);
+  }, [selectedFormId, fetchAppointments, isInitialSetup]);
 
   const fetchServices = async () => {
-    try {
-      const res = await getServices();
-      setServicesList(res.data);
-    } catch (err) {}
+    const res = await getServices();
+    setServicesList(res.data);
   };
 
   const fetchForms = async () => {
-    try {
-      const res = await getForms("latest");
-      setForms(res.data);
-    } catch (err) {
-      
-    }
+    const res = await getForms("latest");
+    setForms(res.data);
+  };
+
+  const fetchClinics = async () => {
+    const res = await getActiveClinics();
+    setClinics(res.data.data || []);
   };
 
   useEffect(() => {
-    fetchServices();
-    fetchForms();
+    const loadInitial = async () => {
+      await Promise.all([
+        fetchServices().catch(() => {}),
+        fetchForms().catch(() => {}),
+        fetchClinics().catch(() => {})
+      ]);
+      setIsInitialSetup(false);
+    };
+    loadInitial();
   }, []);
 
   /* ================= FILTER LOGIC ================= */
@@ -319,9 +331,7 @@ export default function Appointment() {
   /* ================= UI ================= */
   return (
     <div className="apt-admin-layout">
-      <Sidebar activeKey="appointment" />
-
-      <main className="apt-main-content">
+<main className="apt-main-content">
         
         <div className="apt-container">
           
@@ -366,7 +376,13 @@ export default function Appointment() {
               icon={FiLayers} 
               value={selectedFormId} 
               onChange={setSelectedFormId}
-              options={filteredForms.length > 0 ? filteredForms.map(f => ({ value: f.id, label: f.title })) : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]}
+              options={
+                isInitialSetup
+                  ? [{ value: '', label: 'กำลังโหลดแบบฟอร์ม...' }]
+                  : filteredForms.length > 0 
+                    ? filteredForms.map(f => ({ value: f.id, label: f.title })) 
+                    : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
+              }
               style={{ flex: '1 1 300px' }} /* บังคับยืดสุดขอบ */
             />
 
@@ -388,9 +404,7 @@ export default function Appointment() {
               options={[
                 { value: '', label: 'ทุกคลินิก (All)' },
                 { value: 'general', label: 'ทั่วไป' },
-                { value: 'teenager', label: 'คลินิกวัยรุ่น' },
-                { value: 'behavior', label: 'คลินิกLSM' },
-                { value: 'sti', label: 'คลินิกโรคติดต่อ' }
+                ...clinics.map(c => ({ value: c.slug, label: c.name }))
               ]}
             />
 
@@ -469,7 +483,7 @@ export default function Appointment() {
           {!calendarMode ? (
             <AppointmentTable 
               appointments={filteredAppointments} 
-              isLoading={isLoading}
+              isLoading={isLoading || isInitialSetup}
               onSelectCase={setSelectedCase} 
               onUpdateApptStatus={handleUpdateApptStatus}
             />

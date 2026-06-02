@@ -1,27 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { FiClock, FiLogIn, FiChevronLeft, FiChevronRight, FiCheckCircle, FiShield, FiHeart, FiPhoneCall,FiArrowLeft } from "react-icons/fi";
+import { FiClock, FiLogIn, FiChevronLeft, FiChevronRight, FiCheckCircle, FiShield, FiHeart, FiPhoneCall, FiArrowLeft } from "react-icons/fi";
 import "./SutLanding2.css";
 
 import logo from "../../assets/logoSUTH.png";
 import bgHealth from "../../assets/bg-health.jpg";
 import bgClinic from "../../assets/bg-new.jpg";
-import teenLogo from "../../assets/clinic-teen_3.png";
-import stiLogo from "../../assets/clinic-sti.png";
-import behaviorLogo from "../../assets/clinic-behavior.png";
-import teenBg from "../../assets/clinic-teenager.jpg";
-import stiBg from "../../assets/clinic-sti.jpg";
-import behaviorBg from "../../assets/clinic-behavior.jpg";
 import { formCache } from "../../services/cache";
-import api, { getForms, getBanners } from "../../services/api";
+import api, { getForms, getBanners, getActiveClinics } from "../../services/api";
 
 const SLIDE_INTERVAL = 6000;
 const CARD_THEMES = ["sut2-card--blue", "sut2-card--pink", "sut2-card--green"];
-const CLINICS = [
-  { id: "teenager", name: "คลินิกวัยรุ่น", image: teenLogo, bg: teenBg },
-  { id: "sti", name: "คลินิกโรคติดต่อทางเพศสัมพันธ์", image: stiLogo, bg: stiBg },
-  { id: "behavior", name: "คลินิกปรับเปลี่ยนพฤติกรรม", image: behaviorLogo, bg: behaviorBg },
-];
 
 function stripHtml(html) {
   if (!html) return "";
@@ -29,22 +18,12 @@ function stripHtml(html) {
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
 }
 
-function useImageType(src) {
-  const [isBanner, setIsBanner] = useState(false);
-  useEffect(() => {
-    if (!src) return;
-    const img = new Image();
-    img.onload = () => setIsBanner(img.naturalWidth / img.naturalHeight >= 1.4);
-    img.src = src;
-  }, [src]);
-  return isBanner;
-}
+
 
 // ✅ FormCard ที่แก้ไขแล้ว
 function FormCard({ form, themeClass, count, isLoaded }) {
   const navigate = useNavigate();
   const displayImage = form.image;
-  const isBanner = useImageType(displayImage);
   const plainDesc = stripHtml(form.description || "คลิกเพื่อประเมินความเสี่ยง");
 
   return (
@@ -55,25 +34,11 @@ function FormCard({ form, themeClass, count, isLoaded }) {
       tabIndex={0}
     >
       {/* ===== Band ด้านบน ===== */}
-     <div className={`sut2-card__band ${displayImage ? "sut2-card__band--has-img" : ""}`}>
+      <div className={`sut2-card__band ${displayImage ? "sut2-card__band--has-img" : ""}`}>
         {displayImage && (
           <img className="sut2-card__band-img" src={displayImage} alt={form.title} />
         )}
       </div>
-      
-     {/* {displayImage && isBanner && (
-    <img className="sut2-card__band-img" src={displayImage} alt={form.title} />
-  )} */}
-        {/* มีรูปแต่ไม่ใช่ banner → แสดงรูปกลาง band */}
-    {/*   {displayImage && !isBanner && (
-          <div className="sut2-card__illust-inline">
-            <img src={displayImage} alt="Form Cover" />
-          </div>
-        )}
-     */}
-        {/* ไม่มีรูป → แสดงแค่สี gradient จาก theme (ไม่มี element เพิ่ม) */}
-       
-   {/*   </div>  */}
 
       {/* ===== Body ตัวหนังสือ ===== */}
       <div className="sut2-card__body">
@@ -108,6 +73,9 @@ export default function SutLanding2() {
   const [counts, setCounts] = useState({});
   const [loading, setLoading] = useState(true);
 
+  const [clinics, setClinics] = useState([]);
+  const [loadingClinics, setLoadingClinics] = useState(true);
+
   const [activeIdx, setActiveIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [selectedClinic, setSelectedClinic] = useState(null);
@@ -118,7 +86,7 @@ export default function SutLanding2() {
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
-    const handleResize = () => {};
+    const handleResize = () => { };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -140,8 +108,22 @@ export default function SutLanding2() {
   }, []);
 
   useEffect(() => {
-    getBanners().then(res => setSlides(res.data.map(b => ({ image: b.image, alt: b.filename }))));
+    // Load Clinics
+    getActiveClinics().then(res => {
+     const sorted = (res.data.data || []).sort(
+  (a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999)
+);
+setClinics(sorted);
+      setLoadingClinics(false);
+    }).catch(err => {
+      console.error("Failed to load clinics", err);
+      setLoadingClinics(false);
+    });
 
+    // Load Banners
+    getBanners().then(res => setSlides(res.data.map(b => ({ image: b.image, alt: b.filename, link: b.link }))));
+
+    // Load Forms
     const cachedForms = formCache.get('forms');
     if (cachedForms) {
       setForms(cachedForms);
@@ -159,8 +141,9 @@ export default function SutLanding2() {
         if (end && now > end) return false;
         return true;
       });
-      setForms([...activeForms].reverse());
-      formCache.set('forms', [...activeForms].reverse());
+      const reversed = [...activeForms].reverse();
+      setForms(reversed);
+      formCache.set('forms', reversed);
       setLoading(false);
     }).catch(() => {
       setForms([]);
@@ -192,7 +175,7 @@ export default function SutLanding2() {
   }, [selectedClinic]);
 
   const handleNextForm = useCallback(() => {
-    const maxLength = !selectedClinic ? CLINICS.length : filteredForms.length;
+    const maxLength = !selectedClinic ? clinics.length : filteredForms.length;
     if (activeIdx < maxLength - 1) {
       setActiveIdx(prev => prev + 1);
       if (scrollContainerRef.current) {
@@ -200,7 +183,7 @@ export default function SutLanding2() {
         scrollContainerRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' });
       }
     }
-  }, [activeIdx, filteredForms.length, selectedClinic]);
+  }, [activeIdx, filteredForms.length, selectedClinic, clinics.length]);
 
   const handlePrevForm = useCallback(() => {
     if (activeIdx > 0) {
@@ -225,7 +208,7 @@ export default function SutLanding2() {
         formIds: formList.map(f => f.id)
       });
       setCounts(response.data.data);
-    } catch (err) {}
+    } catch (err) { }
   }, []);
 
   const [isInViewport, setIsInViewport] = useState(false);
@@ -305,11 +288,23 @@ export default function SutLanding2() {
               {slides.length > 0 ? (
                 <div className="sut2-banner-slider">
                   {slides.map((slide, i) => (
-                    <img
-                      key={i} src={slide.image} alt={slide.alt || 'banner'}
-                      className={`sut2-banner-slide ${i === currentSlide ? 'active' : ''}`}
-                    />
-                  ))}
+                    slide.link ? (
+                      <a
+                        href={slide.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        key={i}
+                        className={`sut2-banner-slide ${i === currentSlide ? 'active' : ''}`}
+                        style={{ display: i === currentSlide ? 'block' : 'none' }} 
+                      >
+                        <img src={slide.image} alt={slide.alt || 'banner'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </a>
+                    ) : (
+                      <img
+                        key={i} src={slide.image} alt={slide.alt || 'banner'}
+                        className={`sut2-banner-slide ${i === currentSlide ? 'active' : ''}`}
+                      />
+                    )))}
                   <div className="sut2-banner-dots">
                     {slides.map((_, i) => (
                       <button key={i} className={`sut2-banner-dot ${i === currentSlide ? 'active' : ''}`} onClick={() => setCurrentSlide(i)} />
@@ -381,7 +376,7 @@ export default function SutLanding2() {
 
               <div className={`sut2-dots-wrapper-left ${!selectedClinic ? 'show' : ''}`}>
                 <div className="sut2-3d-dots">
-                  {(!selectedClinic ? CLINICS : filteredForms).map((_, i) => (
+                  {(!selectedClinic ? clinics : filteredForms).map((_, i) => (
                     <span
                       key={i}
                       className={`sut2-3d-dot ${activeIdx === i ? 'active' : ''}`}
@@ -396,48 +391,54 @@ export default function SutLanding2() {
             <div className="sut2-3d-main-content">
               <div className={`sut2-stacked-viewport ${selectedClinic ? "is-form-mode" : ""} ${animationStage === "flip" ? "show-forms" : ""}`}>
                 <div className="sut2-stacked-list" key={selectedClinic ? "forms" : "clinics"}>
-                  {loading ? (
+                  {loading || loadingClinics ? (
                     <p style={{ textAlign: 'center', width: '100%', color: 'white' }}>กำลังโหลดข้อมูล...</p>
                   ) : !selectedClinic ? (
-                    CLINICS.map((clinic, index) => {
-                      const offset = index - activeIdx;
-                      let statusClass = offset === 0 ? "active" : offset < 0 ? "exit" : offset < 3 ? "visible" : "hidden";
+                    clinics.length === 0 ? (
+                      <p style={{ textAlign: 'center', width: '100%', color: 'white' }}>ไม่พบข้อมูลคลินิก</p>
+                    ) : (
+                      clinics.map((clinic, index) => {
+                        const offset = index - activeIdx;
+                        let statusClass = offset === 0 ? "active" : offset < 0 ? "exit" : offset < 3 ? "visible" : "hidden";
 
-                      return (
-                        <div
-                          key={clinic.id}
-                          className={`sut2-stacked-item ${statusClass}`}
-                          style={{ '--display-index': offset, zIndex: CLINICS.length - index }}
-                          onClick={() => {
-                            if (animatingClinic) return;
-                            setAnimatingClinic(clinic.id);
-                            setAnimationStage("flying");
-
-                            setTimeout(() => {
-                              setAnimationStage("flip");
-                              setSelectedClinic(clinic.id);
-                              setActiveIdx(0);
-                              setIsFlipped(true);
-                            }, 500);
-
-                            setTimeout(() => {
-                              setAnimatingClinic(null);
-                              setAnimationStage("done");
-                            }, 1100);
-                          }}
-                        >
+                        return (
                           <div
-                            className={`clinic-card ${animatingClinic === clinic.id && animationStage === "flying" ? 'clinic-fly' : ''}`}
-                            style={{ backgroundImage: `url(${clinic.bg})` }}
+                            key={clinic.slug}
+                            className={`sut2-stacked-item ${statusClass}`}
+                            style={{ '--display-index': offset, zIndex: clinics.length - index }}
+                            onClick={() => {
+                              if (animatingClinic) return;
+                              setAnimatingClinic(clinic.slug);
+                              setAnimationStage("flying");
+
+                              setTimeout(() => {
+                                setAnimationStage("flip");
+                                setSelectedClinic(clinic.slug);
+                                setActiveIdx(0);
+                                setIsFlipped(true);
+                              }, 500);
+
+                              setTimeout(() => {
+                                setAnimatingClinic(null);
+                                setAnimationStage("done");
+                              }, 1100);
+                            }}
                           >
-                            <div className="clinic-icon">
-                              <img src={clinic.image} alt={clinic.name} />
+                            <div
+                              className={`clinic-card ${animatingClinic === clinic.slug && animationStage === "flying" ? 'clinic-fly' : ''}`}
+                              style={{ backgroundImage: `url(${clinic.bg || bgClinic})` }}
+                            >
+                              {(clinic.show_icon === 1 || clinic.show_icon === undefined) && clinic.image && (
+                                <div className="clinic-icon">
+                                  <img src={clinic.image} alt={clinic.name} />
+                                </div>
+                              )}
+                              <h3>{clinic.name}</h3>
                             </div>
-                            <h3>{clinic.name}</h3>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })
+                    )
                   ) : filteredForms.length === 0 ? (
                     <p style={{ textAlign: 'center', width: '100%', color: 'white' }}>ไม่มีแบบประเมินในคลินิกนี้</p>
                   ) : (

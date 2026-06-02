@@ -23,45 +23,6 @@ router.get('/dashboard/summary', async (req, res) => {
     }
 });
 
-// 2. ข้อมูลเคสล่าสุด
-router.get('/dashboard/recent', async (req, res) => {
-    try {
-        const { clinic } = req.query; 
-        // 🟢 เพิ่ม r.form_id ลงใน SELECT ด้วย! สำคัญมากสำหรับใช้ดึงเกณฑ์คะแนนย่อย
-        let sql = `
-            SELECT r.id, r.form_id, r.identity_value, r.summary_data, r.submitted_at, r.status, r.risk_level, r.master_case_id, f.title as form_title, f.clinic_type 
-            FROM form_responses r 
-            LEFT JOIN forms f ON r.form_id = f.id 
-            WHERE 1=1
-        `;
-        const params = [];
-        if (clinic && clinic !== 'all') {
-            sql += " AND f.clinic_type = ?";
-            params.push(clinic);
-        }
-        sql += " ORDER BY r.submitted_at DESC LIMIT 15";
-
-        const [rows] = await db.query(sql, params);
-
-        const decryptedRows = rows.map(r => {
-            if (r.summary_data) {
-                try {
-                    let summaryStr = safeDecrypt(r.summary_data);
-                    let summary = typeof summaryStr === 'string' ? JSON.parse(summaryStr) : summaryStr;
-                    if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
-                    if (summary.phone) summary.phone = safeDecrypt(summary.phone);
-                    r.summary_data = summary;
-                } catch (e) {}
-            }
-            return r;
-        });
-        
-        res.json(decryptedRows);
-    } catch (err) {
-        console.error("Dashboard Recent Error:", err);
-        res.status(500).json({ message: "Server error" });
-    }
-});
 
 // 3. ดึงการตั้งค่าหน้า Dashboard
 router.get('/dashboard-settings/settings', async (req, res) => {
@@ -325,6 +286,75 @@ router.get('/admin/master-cases/stats', async (req, res) => {
     } catch (error) {
         console.error("Stats API Error:", error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// 🟢 1. สร้างฟังก์ชันช่วยถอดรหัสแบบปลอดภัย
+const decryptIfEncrypted = (text) => {
+    if (!text) return text;
+    try {
+        const decrypted = safeDecrypt(text);
+        return decrypted ? decrypted : text;
+    } catch (e) {
+        return text;
+    }
+};
+
+// 2. ข้อมูลเคสล่าสุด
+router.get('/dashboard/recent', async (req, res) => {
+    try {
+        const { clinic } = req.query; 
+        let sql = `
+            SELECT r.id, r.form_id, r.identity_value, r.summary_data, r.submitted_at, 
+                   r.status, r.risk_level, r.master_case_id, r.staff_id, 
+                   f.title as form_title, f.clinic_type 
+            FROM form_responses r 
+            LEFT JOIN forms f ON r.form_id = f.id 
+            WHERE 1=1
+        `;
+        const params = [];
+        if (clinic && clinic !== 'all') {
+            sql += " AND f.clinic_type = ?";
+            params.push(clinic);
+        }
+        sql += " ORDER BY r.submitted_at DESC LIMIT 15";
+
+        const [rows] = await db.query(sql, params);
+
+        const decryptedRows = rows.map(r => {
+            if (r.identity_value) r.identity_value = decryptIfEncrypted(r.identity_value);
+            
+            if (r.summary_data) {
+                try {
+                    let summaryStr = decryptIfEncrypted(r.summary_data);
+                    let summary = typeof summaryStr === 'string' ? JSON.parse(summaryStr) : summaryStr;
+                    if (summary.display_name) summary.display_name = decryptIfEncrypted(summary.display_name);
+                    if (summary.display_phone) summary.display_phone = decryptIfEncrypted(summary.display_phone);
+                    if (summary.name) summary.name = decryptIfEncrypted(summary.name);
+                    if (summary.phone) summary.phone = decryptIfEncrypted(summary.phone);
+                    if (summary.citizenId) summary.citizenId = decryptIfEncrypted(summary.citizenId);
+                    if (summary.idCard) summary.idCard = decryptIfEncrypted(summary.idCard);
+
+                    // 🟢 5. วนลูปถอดรหัสข้อมูลใน raw_answers (สำหรับเคสที่แอดมินสร้าง)
+                    if (summary.raw_answers) {
+                        for (const key in summary.raw_answers) {
+                            if (key.includes('ชื่อ') || key.includes('เบอร์') || key.includes('โทร') || key.includes('บัตร') || key.includes('name') || key.includes('phone')) {
+                                summary.raw_answers[key] = decryptIfEncrypted(summary.raw_answers[key]);
+                            }
+                        }
+                    }
+                    r.summary_data = summary;
+                } catch (e) {
+                    console.error("Decrypt Summary Error:", e);
+                }
+            }
+            return r;
+        });
+        
+        res.json(decryptedRows);
+    } catch (err) {
+        console.error("Dashboard Recent Error:", err);
+        res.status(500).json({ message: "Server error" });
     }
 });
 

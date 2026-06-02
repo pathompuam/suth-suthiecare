@@ -30,25 +30,32 @@ router.get('/cases/:id/logs', async (req, res) => {
 // บันทึกประวัติ (Log) และอัปเดตสถานะเคสล่าสุด
 // ==========================================
 router.post('/cases/:id/logs', async (req, res) => {
+   console.log("BODY =", req.body);
   const caseId = req.params.id; // ไอดีของ form_responses
-  const { master_case_id, type, staff, detail, status, status_id, risk_level } = req.body; 
-  
+  const { master_case_id, type, staff, staff_id, detail, status, status_id, risk_level } = req.body;
+
   try {
     // 1. บันทึกประวัติลงตาราง case_logs (เหมือนเดิม)
-    const sqlLog = "INSERT INTO case_logs (response_id, master_case_id, type, staff, detail, status_id) VALUES (?, ?, ?, ?, ?, ?)";
-    await db.query(sqlLog, [caseId, master_case_id || null, type, staff, detail, status_id || null]);
+    const sqlLog = "INSERT INTO case_logs (response_id, master_case_id, type, staff, staff_id, detail, status_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    await db.query(sqlLog, [caseId, master_case_id || null, type, staff, staff_id || null, detail, status_id || null]);
 
     // 🟢 2. สำคัญมาก! อัปเดตสถานะและความเสี่ยงล่าสุด กลับไปที่ตาราง form_responses
     if (status) {
-        await db.query("UPDATE form_responses SET status = ? WHERE id = ?", [status, caseId]);
+      await db.query("UPDATE form_responses SET status = ? WHERE id = ?", [status, caseId]);
     }
     if (risk_level) {
-        await db.query("UPDATE form_responses SET risk_level = ? WHERE id = ?", [risk_level, caseId]);
+      await db.query("UPDATE form_responses SET risk_level = ? WHERE id = ?", [risk_level, caseId]);
+    }
+    if (staff_id !== undefined && staff_id !== null) {
+      await db.query(
+        "UPDATE form_responses SET staff_id = ? WHERE id = ?",
+        [staff_id, caseId]
+      );
     }
 
     // 🟢 3. ถ้ามีการเชื่อม Master Case ให้อัปเดตความเสี่ยงภาพรวมด้วย
     if (master_case_id && risk_level) {
-        await db.query("UPDATE mastercases SET overall_risk = ? WHERE id = ?", [risk_level, master_case_id]);
+      await db.query("UPDATE mastercases SET overall_risk = ? WHERE id = ?", [risk_level, master_case_id]);
     }
 
     res.json({ message: "บันทึกประวัติและอัปเดตสถานะสำเร็จ" });
@@ -83,10 +90,10 @@ router.delete('/cases/:id', async (req, res) => {
 // ==========================================
 router.post('/appointments', async (req, res) => {
   // 🟢 รับ master_case_id เพิ่มเข้ามา
-  const { case_id, master_case_id, service_id, appointment_no, appointment_date, staff, note } = req.body;
+  const { case_id, master_case_id, service_id, appointment_no, appointment_date, staff, staff_id, note } = req.body;
   try {
-    const sql = "INSERT INTO appointments (case_id, master_case_id, service_id, appointment_no, appointment_date, staff, note) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    await db.query(sql, [case_id, master_case_id || null, service_id, appointment_no, appointment_date, staff, note]);
+    const sql = "INSERT INTO appointments (case_id, master_case_id, service_id, appointment_no, appointment_date, staff, staff_id, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    await db.query(sql, [case_id, master_case_id || null, service_id, appointment_no, appointment_date, staff, staff_id || null, note]);
     res.status(201).json({ message: "Appointment created" });
   } catch (error) { res.status(500).json({ error: "Server Error" }); }
 });
@@ -106,19 +113,19 @@ router.get('/appointments', async (req, res) => {
       ORDER BY a.appointment_date ASC
       LIMIT ? OFFSET ?
     `, [limit, offset]);
-    
+
     // 🟢 ใช้ Promise.all เพื่อกระจายภาระการถอดรหัส
     const decryptedRows = await Promise.all(rows.map(async (r) => {
-        if (r.identity_value) r.identity_value = safeDecrypt(r.identity_value);
-        if (r.summary_data) {
-            let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : r.summary_data;
-            if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
-            if (summary.phone) summary.phone = safeDecrypt(summary.phone);
-            r.summary_data = summary;
-        }
-        return r;
+      if (r.identity_value) r.identity_value = safeDecrypt(r.identity_value);
+      if (r.summary_data) {
+        let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : r.summary_data;
+        if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
+        if (summary.phone) summary.phone = safeDecrypt(summary.phone);
+        r.summary_data = summary;
+      }
+      return r;
     }));
-    
+
     res.json(decryptedRows);
   } catch (err) { res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูลนัดหมาย" }); }
 });
@@ -143,17 +150,18 @@ router.get('/cases/:id/answers', async (req, res) => {
     const [rows] = await db.query(`SELECT question_id, question_title, answer_value FROM form_answers WHERE response_id = ? ORDER BY id ASC`, [req.params.id]);
     const result = rows.map(r => {
       let val = r.answer_value;
-      try { val = typeof val === 'string' ? JSON.parse(val) : val; } catch {}
+      try { val = typeof val === 'string' ? JSON.parse(val) : val; } catch { }
 
       // ถอดรหัสถ้ารายข้อเป็นชื่อ/เบอร์
       if (r.question_title.includes('ชื่อ') || r.question_title.includes('เบอร์') || r.question_title.includes('โทร') || r.question_title.includes('บัตร')) {
-          val = safeDecrypt(val);
+        val = safeDecrypt(val);
       }
       return { question_id: r.question_id, question_title: r.question_title, answer_value: val };
     });
     res.json(result);
   } catch (err) { res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงคำตอบ" }); }
 });
+
 
 // ==========================================
 // 5. EDIT RESPONSE (🟢 เข้ารหัสตอนเซฟ)
@@ -171,7 +179,7 @@ router.patch('/history/response/:id', async (req, res) => {
     // เข้ารหัสก่อนบันทึกกลับ
     let valToSave = value;
     if (field === 'display_name' || field === 'phone') {
-        valToSave = encrypt(value);
+      valToSave = encrypt(value);
     }
 
     summary[field] = valToSave;
@@ -204,11 +212,11 @@ router.patch('/history/answer/:responseId/:questionId', async (req, res) => {
 
     let valToSave = String(value).trim();
     if (qTitle.includes('ชื่อ') || qTitle.includes('เบอร์') || qTitle.includes('โทร') || qTitle.includes('บัตร')) {
-        valToSave = encrypt(valToSave);
+      valToSave = encrypt(valToSave);
     }
 
     const [ansRows] = await db.query('SELECT id FROM form_answers WHERE response_id = ? AND question_id = ?', [responseId, questionId]);
-    
+
     if (ansRows.length) {
       await db.query(`UPDATE form_answers SET answer_value = ? WHERE response_id = ? AND question_id = ?`, [JSON.stringify(valToSave), responseId, questionId]);
     } else {
@@ -242,25 +250,47 @@ router.get('/history/:identity', async (req, res) => {
 
     if (!rows.length) return res.status(404).json({ message: "ไม่พบประวัติ" });
 
+    // 🔒 ฟังก์ชันเช็คว่าข้อความถูกเข้ารหัสมาหรือไม่ ถ้าเป็นข้อความดิบจากฟอร์มจะคืนค่าเดิมทันที
+    const decryptIfEncrypted = (text) => {
+      if (!text) return text;
+      try {
+        const decrypted = safeDecrypt(text);
+        return decrypted ? decrypted : text; // ถ้าระบบแกะสลักรหัสผ่านสำเร็จ ให้ส่งค่ากลับ
+      } catch (e) {
+        return text; // ถ้าถอดรหัสพัง (แปลว่าเป็นข้อความดิบ) ให้ส่งตัวหนังสือดิบกลับไปทันที
+      }
+    };
+
     const result = rows.map(r => {
       let summary = {};
-      try { summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : (r.summary_data || {}); } catch {}
-      
-      // 🟢 ถอดรหัสส่วนข้อมูลส่วนตัวกลับเป็นภาษาคน
-      if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
-      if (summary.display_phone) summary.display_phone = safeDecrypt(summary.display_phone);
-      if (summary.phone) summary.phone = safeDecrypt(summary.phone);
+      try {
+        summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : (r.summary_data || {});
+      } catch { }
+
+      // 🟢 เรียกใช้ตัวดักถอดรหัสอย่างปลอดภัย เพื่อป้องกันฟอร์มตรงของคนไข้พังค่ะ
+      if (summary.display_name) summary.display_name = decryptIfEncrypted(summary.display_name);
+      if (summary.display_phone) summary.display_phone = decryptIfEncrypted(summary.display_phone);
+      if (summary.phone) summary.phone = decryptIfEncrypted(summary.phone);
+
+      // ตรวจสอบข้อมูลในคำถามดิบทีละข้อ
       if (summary.raw_answers) {
-          for (const key in summary.raw_answers) {
-              if (key.includes('ชื่อ') || key.includes('เบอร์') || key.includes('โทร') || key.includes('บัตร')) {
-                  summary.raw_answers[key] = safeDecrypt(summary.raw_answers[key]);
-              }
+        for (const key in summary.raw_answers) {
+          if (key.includes('ชื่อ') || key.includes('เบอร์') || key.includes('โทร') || key.includes('บัตร')) {
+            // ครอบด้วยตัวตรวจเช็คเพื่อป้องกันการเกิดรหัสต่างดาว
+            summary.raw_answers[key] = decryptIfEncrypted(summary.raw_answers[key]);
           }
+        }
       }
 
       return {
-        id: r.id, form_id: r.form_id, form_title: r.form_title, clinic_type: r.clinic_type,
-        submitted_at: r.submitted_at, status: r.status, risk_level: r.risk_level, summary_data: summary
+        id: r.id,
+        form_id: r.form_id,
+        form_title: r.form_title,
+        clinic_type: r.clinic_type,
+        submitted_at: r.submitted_at,
+        status: r.status,
+        risk_level: r.risk_level,
+        summary_data: summary
       };
     });
 
@@ -275,18 +305,18 @@ router.get('/history/:identity', async (req, res) => {
 // 3.5 SERVICES
 // ==========================================
 router.get('/services', async (req, res) => {
-  try { 
+  try {
     // 🟢 1. เช็คว่ามีใน Cache ไหม ถ้ามีให้ส่งกลับทันที (ไม่กวน DB)
     if (myCache.has('services')) {
       return res.json(myCache.get('services'));
     }
 
-    const [rows] = await db.query("SELECT * FROM service_types ORDER BY id ASC"); 
-    
+    const [rows] = await db.query("SELECT * FROM service_types ORDER BY id ASC");
+
     // 🟢 2. ถ้าไม่มีให้ดึงจาก DB แล้วจำใส่ Cache ไว้
     myCache.set('services', rows);
-    res.json(rows); 
-  } 
+    res.json(rows);
+  }
   catch (err) { res.status(500).json({ message: "Error" }); }
 });
 
@@ -300,12 +330,12 @@ router.post('/services', async (req, res) => {
 });
 
 router.put('/services/:id', async (req, res) => {
-  try { await db.query("UPDATE service_types SET name = ? WHERE id = ?", [req.body.name, req.params.id]); myCache.del('services'); res.json({ message: "Updated" }); } 
+  try { await db.query("UPDATE service_types SET name = ? WHERE id = ?", [req.body.name, req.params.id]); myCache.del('services'); res.json({ message: "Updated" }); }
   catch (err) { res.status(500).json({ message: "Error" }); }
 });
 
 router.delete('/services/:id', async (req, res) => {
-  try { await db.query("DELETE FROM service_types WHERE id = ?", [req.params.id]); myCache.del('services'); res.json({ message: "Deleted" }); } 
+  try { await db.query("DELETE FROM service_types WHERE id = ?", [req.params.id]); myCache.del('services'); res.json({ message: "Deleted" }); }
   catch (err) { res.status(500).json({ message: "Error" }); }
 });
 
@@ -314,82 +344,82 @@ router.delete('/services/:id', async (req, res) => {
 // รองรับทั้ง API เก่าและใหม่ ป้องกันสถานะพื้นฐานหาย
 // ==========================================
 const getStatusesHandler = async (req, res) => {
-    try {
-        const clinic_type = req.query.clinic_type || req.query.clinic || 'general';
-        const cacheKey = `statuses_${clinic_type}`; // 🟢 สร้างชื่อ Key แยกตามคลินิก
-        
-        // 🟢 1. เช็ค Cache ก่อน
-        if (myCache.has(cacheKey)) {
-            return res.json(myCache.get(cacheKey));
-        }
+  try {
+    const clinic_type = req.query.clinic_type || req.query.clinic || 'general';
+    const cacheKey = `statuses_${clinic_type}`; // 🟢 สร้างชื่อ Key แยกตามคลินิก
 
-        // 🟢 ดึงสถานะของคลินิกนี้ "รวมถึง" สถานะพื้นฐาน (all หรือ NULL) เพื่อไม่ให้สถานะหลักหาย
-        let sql = "SELECT * FROM case_statuses WHERE is_active = 1 AND (clinic_type = ? OR clinic_type = 'all' OR clinic_type IS NULL) ORDER BY id ASC";
-        let [rows] = await db.query(sql, [clinic_type]);
-
-        // Auto-Seed: ถ้ายังไม่มีข้อมูลในระบบ ให้สร้างค่าเริ่มต้น
-        if (rows.length === 0) {
-            const defaultStatuses = [
-                { name: 'รอติดต่อ (รอดำเนินการ)', color: '#f59e0b', type: 'all' },
-                { name: 'นัดหมายสำเร็จ', color: '#10b981', type: 'all' },
-                { name: 'ติดต่อไม่ได้ / ไม่รับสาย', color: '#ef4444', type: 'all' },
-                { name: 'ขอเลื่อนนัด', color: '#8b5cf6', type: 'all' },
-                { name: 'อยู่ระหว่างติดตามต่อเนื่อง', color: '#3b82f6', type: 'all' },
-                { name: 'ปฏิเสธบริการ', color: '#64748b', type: 'all' },
-                { name: 'ส่งต่อผู้เชี่ยวชาญ', color: '#0ea5e9', type: 'all' },
-                { name: 'ปิดเคสเรียบร้อย', color: '#10b981', type: 'all' }
-            ];
-            
-            // สำหรับ STI คลินิก ให้เพิ่มสถานะพิเศษเข้าไปด้วย
-            if (clinic_type === 'sti') {
-                defaultStatuses.push({ name: 'ส่งต่อ Safe Clinic', color: '#ec4899', type: 'sti' });
-            }
-
-            for (const def of defaultStatuses) {
-                // ข้ามการบันทึกถ้าเป็นสถานะเฉพาะคลินิกอื่น
-                if (def.type !== 'all' && def.type !== clinic_type) continue;
-                
-                await db.query(
-                    "INSERT INTO case_statuses (name, color, clinic_type, is_active) VALUES (?, ?, ?, 1)",
-                    [def.name, def.color, def.type]
-                );
-            }
-            [rows] = await db.query(sql, [clinic_type]);
-        }
-        // 🟢 2. เซฟลง Cache
-        myCache.set(cacheKey, rows);
-        res.json(rows);
-    } catch (err) {
-        console.error("GET Statuses Error:", err.message);
-        res.status(500).json({ error: err.message });
+    // 🟢 1. เช็ค Cache ก่อน
+    if (myCache.has(cacheKey)) {
+      return res.json(myCache.get(cacheKey));
     }
+
+    // 🟢 ดึงสถานะของคลินิกนี้ "รวมถึง" สถานะพื้นฐาน (all หรือ NULL) เพื่อไม่ให้สถานะหลักหาย
+    let sql = "SELECT * FROM case_statuses WHERE is_active = 1 AND (clinic_type = ? OR clinic_type = 'all' OR clinic_type IS NULL) ORDER BY id ASC";
+    let [rows] = await db.query(sql, [clinic_type]);
+
+    // Auto-Seed: ถ้ายังไม่มีข้อมูลในระบบ ให้สร้างค่าเริ่มต้น
+    if (rows.length === 0) {
+      const defaultStatuses = [
+        { name: 'รอติดต่อ (รอดำเนินการ)', color: '#f59e0b', type: 'all' },
+        { name: 'นัดหมายสำเร็จ', color: '#10b981', type: 'all' },
+        { name: 'ติดต่อไม่ได้ / ไม่รับสาย', color: '#ef4444', type: 'all' },
+        { name: 'ขอเลื่อนนัด', color: '#8b5cf6', type: 'all' },
+        { name: 'อยู่ระหว่างติดตามต่อเนื่อง', color: '#3b82f6', type: 'all' },
+        { name: 'ปฏิเสธบริการ', color: '#64748b', type: 'all' },
+        { name: 'ส่งต่อผู้เชี่ยวชาญ', color: '#0ea5e9', type: 'all' },
+        { name: 'ปิดเคสเรียบร้อย', color: '#10b981', type: 'all' }
+      ];
+
+      // สำหรับ STI คลินิก ให้เพิ่มสถานะพิเศษเข้าไปด้วย
+      if (clinic_type === 'sti') {
+        defaultStatuses.push({ name: 'ส่งต่อ Safe Clinic', color: '#ec4899', type: 'sti' });
+      }
+
+      for (const def of defaultStatuses) {
+        // ข้ามการบันทึกถ้าเป็นสถานะเฉพาะคลินิกอื่น
+        if (def.type !== 'all' && def.type !== clinic_type) continue;
+
+        await db.query(
+          "INSERT INTO case_statuses (name, color, clinic_type, is_active) VALUES (?, ?, ?, 1)",
+          [def.name, def.color, def.type]
+        );
+      }
+      [rows] = await db.query(sql, [clinic_type]);
+    }
+    // 🟢 2. เซฟลง Cache
+    myCache.set(cacheKey, rows);
+    res.json(rows);
+  } catch (err) {
+    console.error("GET Statuses Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
 };
 
 const createStatusHandler = async (req, res) => {
-    try {
-        const { name, color, clinic_type } = req.body;
-        // 🟢 ผูกสถานะที่สร้างใหม่เข้ากับคลินิกปัจจุบันอย่างถูกต้อง
-        const targetClinic = clinic_type && clinic_type !== 'all' ? clinic_type : 'general';
-        const targetColor = color || '#64748b';
-        
-        const [result] = await db.query(
-            "INSERT INTO case_statuses (name, color, clinic_type, is_active) VALUES (?, ?, ?, 1)",
-            [name, targetColor, targetClinic]
-        );
-        res.json({ id: result.insertId, name, color: targetColor, clinic_type: targetClinic, is_active: 1 });
-    } catch (err) {
-        console.error("POST Status Error:", err.message);
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const { name, color, clinic_type } = req.body;
+    // 🟢 ผูกสถานะที่สร้างใหม่เข้ากับคลินิกปัจจุบันอย่างถูกต้อง
+    const targetClinic = clinic_type && clinic_type !== 'all' ? clinic_type : 'general';
+    const targetColor = color || '#64748b';
+
+    const [result] = await db.query(
+      "INSERT INTO case_statuses (name, color, clinic_type, is_active) VALUES (?, ?, ?, 1)",
+      [name, targetColor, targetClinic]
+    );
+    res.json({ id: result.insertId, name, color: targetColor, clinic_type: targetClinic, is_active: 1 });
+  } catch (err) {
+    console.error("POST Status Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
 };
 
 const deactivateStatusHandler = async (req, res) => {
-    try {
-        await db.query('UPDATE case_statuses SET is_active = 0 WHERE id = ?', [req.params.id]);
-        res.json({ message: 'Status deactivated' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    await db.query('UPDATE case_statuses SET is_active = 0 WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Status deactivated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // 🟢 ผูก Route ทั้งชื่อเก่าและชื่อใหม่เข้าด้วยกัน (Frontend เรียกอันไหนก็ทำงานได้ 100%)
@@ -407,93 +437,93 @@ router.put('/status-options/:id/deactivate', deactivateStatusHandler);
 // 8. NOTE TEMPLATES (ระบบชุดคำถามล่วงหน้า)
 // ==========================================
 router.get('/templates', async (req, res) => {
-    const { clinic_type } = req.query;
-    try {
-        let sql = "SELECT * FROM note_templates";
-        let params = [];
+  const { clinic_type } = req.query;
+  try {
+    let sql = "SELECT * FROM note_templates";
+    let params = [];
 
-        if (clinic_type) {
-            sql += " WHERE clinic_type = ?";
-            params.push(clinic_type);
-        }
-        
-        sql += " ORDER BY created_at DESC";
-        const [rows] = await db.query(sql, params);
-        res.json(rows);
-    } catch (err) {
-        console.error("❌ Get Templates Error:", err);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล Template" });
+    if (clinic_type) {
+      sql += " WHERE clinic_type = ?";
+      params.push(clinic_type);
     }
+
+    sql += " ORDER BY created_at DESC";
+    const [rows] = await db.query(sql, params);
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ Get Templates Error:", err);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูล Template" });
+  }
 });
 
 router.post('/templates', async (req, res) => {
-    const { clinic_type, label, text } = req.body;
-    if (!clinic_type || !label || !text) {
-        return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
-    }
-    try {
-        const [result] = await db.query(
-            "INSERT INTO note_templates (clinic_type, label, text) VALUES (?, ?, ?)",
-            [clinic_type, label, text]
-        );
-        res.status(201).json({ id: result.insertId, message: "สร้าง Template สำเร็จ" });
-    } catch (err) {
-        console.error("❌ Post Template Error:", err);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดในการบันทึก Template" });
-    }
+  const { clinic_type, label, text } = req.body;
+  if (!clinic_type || !label || !text) {
+    return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
+  }
+  try {
+    const [result] = await db.query(
+      "INSERT INTO note_templates (clinic_type, label, text) VALUES (?, ?, ?)",
+      [clinic_type, label, text]
+    );
+    res.status(201).json({ id: result.insertId, message: "สร้าง Template สำเร็จ" });
+  } catch (err) {
+    console.error("❌ Post Template Error:", err);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการบันทึก Template" });
+  }
 });
 
 router.put('/templates/:id', async (req, res) => {
-    const { id } = req.params;
-    const { label, text } = req.body;
-    try {
-        await db.query(
-            "UPDATE note_templates SET label = ?, text = ? WHERE id = ?",
-            [label, text, id]
-        );
-        res.json({ message: "อัปเดต Template สำเร็จ" });
-    } catch (err) {
-        console.error("❌ Put Template Error:", err);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดในการแก้ไข Template" });
-    }
+  const { id } = req.params;
+  const { label, text } = req.body;
+  try {
+    await db.query(
+      "UPDATE note_templates SET label = ?, text = ? WHERE id = ?",
+      [label, text, id]
+    );
+    res.json({ message: "อัปเดต Template สำเร็จ" });
+  } catch (err) {
+    console.error("❌ Put Template Error:", err);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการแก้ไข Template" });
+  }
 });
 
 router.delete('/templates/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        await db.query("DELETE FROM note_templates WHERE id = ?", [id]);
-        res.json({ message: "ลบ Template สำเร็จ" });
-    } catch (err) {
-        console.error("❌ Delete Template Error:", err);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดในการลบ Template" });
-    }
+  const { id } = req.params;
+  try {
+    await db.query("DELETE FROM note_templates WHERE id = ?", [id]);
+    res.json({ message: "ลบ Template สำเร็จ" });
+  } catch (err) {
+    console.error("❌ Delete Template Error:", err);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการลบ Template" });
+  }
 });
 
 // ==========================================
 // 9. MASTER CASES (ระบบการจัดการแผนการรักษา)
 // ==========================================
 router.get('/master-cases/:identity', async (req, res) => {
-    try {
-        const identity = (req.params.identity || '').replace(/\D/g, '');
-        if (!identity) return res.status(400).json({ message: "เลขบัตรไม่ถูกต้อง" });
+  try {
+    const identity = (req.params.identity || '').replace(/\D/g, '');
+    if (!identity) return res.status(400).json({ message: "เลขบัตรไม่ถูกต้อง" });
 
-        const hashInput = hmacHash(identity);
+    const hashInput = hmacHash(identity);
 
-        const [masterCases] = await db.query(
-            "SELECT * FROM mastercases WHERE identity_hash = ? ORDER BY createdAt DESC", 
-            [hashInput]
-        );
+    const [masterCases] = await db.query(
+      "SELECT * FROM mastercases WHERE identity_hash = ? ORDER BY createdAt DESC",
+      [hashInput]
+    );
 
-        if (masterCases.length === 0) return res.status(404).json({ message: "ไม่พบประวัติการรักษา" });
+    if (masterCases.length === 0) return res.status(404).json({ message: "ไม่พบประวัติการรักษา" });
 
-        const decryptedMasterCases = masterCases.map(mc => ({
-            ...mc,
-            identityValue: safeDecrypt(mc.identityValue)
-        }));
+    const decryptedMasterCases = masterCases.map(mc => ({
+      ...mc,
+      identityValue: safeDecrypt(mc.identityValue)
+    }));
 
-        const masterCaseIds = masterCases.map(mc => mc.id);
+    const masterCaseIds = masterCases.map(mc => mc.id);
 
-        const [responses] = await db.query(`
+    const [responses] = await db.query(`
             SELECT fr.*, f.title as form_title, f.form_type, f.clinic_type 
             FROM form_responses fr
             JOIN forms f ON fr.form_id = f.id
@@ -501,53 +531,53 @@ router.get('/master-cases/:identity', async (req, res) => {
             ORDER BY fr.submitted_at DESC
         `, [masterCaseIds]);
 
-        const decryptedResponses = responses.map(r => {
-            if (r.identity_value) r.identity_value = safeDecrypt(r.identity_value);
-            if (r.summary_data) {
-                let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : r.summary_data;
-                if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
-                if (summary.display_phone) summary.display_phone = safeDecrypt(summary.display_phone);
-                if (summary.phone) summary.phone = safeDecrypt(summary.phone);
-                if (summary.raw_answers) {
-                    for (const key in summary.raw_answers) {
-                        if (key.includes('ชื่อ') || key.includes('เบอร์') || key.includes('โทร') || key.includes('บัตร')) {
-                            summary.raw_answers[key] = safeDecrypt(summary.raw_answers[key]);
-                        }
-                    }
-                }
-                r.summary_data = summary;
+    const decryptedResponses = responses.map(r => {
+      if (r.identity_value) r.identity_value = safeDecrypt(r.identity_value);
+      if (r.summary_data) {
+        let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : r.summary_data;
+        if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
+        if (summary.display_phone) summary.display_phone = safeDecrypt(summary.display_phone);
+        if (summary.phone) summary.phone = safeDecrypt(summary.phone);
+        if (summary.raw_answers) {
+          for (const key in summary.raw_answers) {
+            if (key.includes('ชื่อ') || key.includes('เบอร์') || key.includes('โทร') || key.includes('บัตร')) {
+              summary.raw_answers[key] = safeDecrypt(summary.raw_answers[key]);
             }
-            return r;
-        });
+          }
+        }
+        r.summary_data = summary;
+      }
+      return r;
+    });
 
-        res.json({
-            masterCases: decryptedMasterCases,
-            responses: decryptedResponses
-        });
+    res.json({
+      masterCases: decryptedMasterCases,
+      responses: decryptedResponses
+    });
 
-    } catch (error) {
-        console.error("MasterCase API Error:", error);
-        res.status(500).json({ message: "Server error fetching master cases" });
-    }
+  } catch (error) {
+    console.error("MasterCase API Error:", error);
+    res.status(500).json({ message: "Server error fetching master cases" });
+  }
 });
 
 router.get('/master-cases/by-id/:id', async (req, res) => {
-    try {
-        const masterCaseId = req.params.id;
+  try {
+    const masterCaseId = req.params.id;
 
-        const [masterCases] = await db.query(
-            "SELECT * FROM mastercases WHERE id = ?", 
-            [masterCaseId]
-        );
+    const [masterCases] = await db.query(
+      "SELECT * FROM mastercases WHERE id = ?",
+      [masterCaseId]
+    );
 
-        if (masterCases.length === 0) return res.status(404).json({ message: "ไม่พบประวัติการรักษา" });
+    if (masterCases.length === 0) return res.status(404).json({ message: "ไม่พบประวัติการรักษา" });
 
-        const decryptedMasterCases = masterCases.map(mc => ({
-            ...mc,
-            identityValue: safeDecrypt(mc.identityValue)
-        }));
+    const decryptedMasterCases = masterCases.map(mc => ({
+      ...mc,
+      identityValue: safeDecrypt(mc.identityValue)
+    }));
 
-        const [responses] = await db.query(`
+    const [responses] = await db.query(`
             SELECT fr.*, f.title as form_title, f.form_type, f.clinic_type 
             FROM form_responses fr
             JOIN forms f ON fr.form_id = f.id
@@ -555,148 +585,352 @@ router.get('/master-cases/by-id/:id', async (req, res) => {
             ORDER BY fr.submitted_at DESC
         `, [masterCaseId]);
 
-        const decryptedResponses = responses.map(r => {
-            if (r.identity_value) r.identity_value = safeDecrypt(r.identity_value);
-            if (r.summary_data) {
-                let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : r.summary_data;
-                if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
-                if (summary.display_phone) summary.display_phone = safeDecrypt(summary.display_phone);
-                if (summary.phone) summary.phone = safeDecrypt(summary.phone);
-                if (summary.raw_answers) {
-                    for (const key in summary.raw_answers) {
-                        if (key.includes('ชื่อ') || key.includes('เบอร์') || key.includes('โทร') || key.includes('บัตร')) {
-                            summary.raw_answers[key] = safeDecrypt(summary.raw_answers[key]);
-                        }
-                    }
-                }
-                r.summary_data = summary;
+    const decryptedResponses = responses.map(r => {
+      if (r.identity_value) r.identity_value = safeDecrypt(r.identity_value);
+      if (r.summary_data) {
+        let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : r.summary_data;
+        if (summary.display_name) summary.display_name = safeDecrypt(summary.display_name);
+        if (summary.display_phone) summary.display_phone = safeDecrypt(summary.display_phone);
+        if (summary.phone) summary.phone = safeDecrypt(summary.phone);
+        if (summary.raw_answers) {
+          for (const key in summary.raw_answers) {
+            if (key.includes('ชื่อ') || key.includes('เบอร์') || key.includes('โทร') || key.includes('บัตร')) {
+              summary.raw_answers[key] = safeDecrypt(summary.raw_answers[key]);
             }
-            return r;
-        });
+          }
+        }
+        r.summary_data = summary;
+      }
+      return r;
+    });
 
-        res.json({
-            masterCases: decryptedMasterCases,
-            responses: decryptedResponses
-        });
+    res.json({
+      masterCases: decryptedMasterCases,
+      responses: decryptedResponses
+    });
 
-    } catch (error) {
-        console.error("MasterCase API Error:", error);
-        res.status(500).json({ message: "Server error fetching master cases" });
-    }
+  } catch (error) {
+    console.error("MasterCase API Error:", error);
+    res.status(500).json({ message: "Server error fetching master cases" });
+  }
 });
 
 // ==========================================
 // 🎯 API 10: Secure URL Tokens (เข้ารหัสลิงก์ส่งให้คนไข้เพื่อป้องกันข้อมูลหลุด)
 // ==========================================
 router.post('/generate-token', (req, res) => {
-    try {
-        const { identity } = req.body;
-        if (!identity) return res.status(400).json({ error: "Missing identity" });
-        // 🟢 นำข้อมูลมาเข้ารหัส AES ทันที
-        const token = encrypt(identity);
-        res.json({ token });
-    } catch(e) {
-        res.status(500).json({ error: e.message });
-    }
+  try {
+    const { identity } = req.body;
+    if (!identity) return res.status(400).json({ error: "Missing identity" });
+    // 🟢 นำข้อมูลมาเข้ารหัส AES ทันที
+    const token = encrypt(identity);
+    res.json({ token });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.post('/decode-token', (req, res) => {
-    try {
-        const { token } = req.body;
-        if (!token) return res.status(400).json({ error: "Missing token" });
-        // 🟢 ถอดรหัสกลับมาเป็นข้อมูลปกติ
-        const identity = safeDecrypt(token);
-        res.json({ identity });
-    } catch(e) {
-        res.status(500).json({ error: e.message });
-    }
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: "Missing token" });
+    // 🟢 ถอดรหัสกลับมาเป็นข้อมูลปกติ
+    const identity = safeDecrypt(token);
+    res.json({ identity });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // 🟢 API สำหรับปิดเคส (Close Master Case)
 router.put('/master-cases/:id/close', async (req, res) => {
-    try {
-        const masterCaseId = req.params.id;
-        const { staff } = req.body; // รับชื่อเจ้าหน้าที่ (เผื่อต้องการบันทึกลง Log หรือ Column อื่นในอนาคต)
+  try {
+    const masterCaseId = req.params.id;
+    const { staff } = req.body; // รับชื่อเจ้าหน้าที่ (เผื่อต้องการบันทึกลง Log หรือ Column อื่นในอนาคต)
 
-        // 1. เปลี่ยนสถานะ Master Case เป็น 'Closed'
-        await db.query(
-            "UPDATE mastercases SET status = 'Closed' WHERE id = ?", 
-            [masterCaseId]
-        );
+    // 1. เปลี่ยนสถานะ Master Case เป็น 'Closed'
+    await db.query(
+      "UPDATE mastercases SET status = 'Closed' WHERE id = ?",
+      [masterCaseId]
+    );
 
-        // 2. เปลี่ยนสถานะฟอร์มย่อยทั้งหมดในเคสนี้ ให้กลายเป็น 'ปิดเคสเรียบร้อย' ไปด้วยเลยจะได้ Sync กัน
-        await db.query(
-            "UPDATE form_responses SET status = 'ปิดเคสเรียบร้อย' WHERE master_case_id = ?",
-            [masterCaseId]
-        );
+    // 2. เปลี่ยนสถานะฟอร์มย่อยทั้งหมดในเคสนี้ ให้กลายเป็น 'ปิดเคสเรียบร้อย' ไปด้วยเลยจะได้ Sync กัน
+    await db.query(
+      "UPDATE form_responses SET status = 'ปิดเคสเรียบร้อย' WHERE master_case_id = ?",
+      [masterCaseId]
+    );
 
-        res.json({ message: "ปิดเคสสำเร็จ" });
-    } catch (error) {
-        console.error("Close Case API Error:", error);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดในการปิดเคส" });
-    }
+    res.json({ message: "ปิดเคสสำเร็จ" });
+  } catch (error) {
+    console.error("Close Case API Error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการปิดเคส" });
+  }
 });
 
 // ==========================================
 // 🎯 API 3: บันทึกข้อมูลทางคลินิก (ผลเลือด, PrEP)
 // ==========================================
 router.put('/master-cases/:id/clinical-data', async (req, res) => {
-    try {
-        const { clinical_data } = req.body; // เป็น Object เช่น { blood_test: 'negative', prep: 'prep_with_blood' }
-        await db.query(
-            "UPDATE mastercases SET clinical_data = ? WHERE id = ?",
-            [JSON.stringify(clinical_data), req.params.id]
-        );
-        res.json({ message: "บันทึกข้อมูลทางคลินิกสำเร็จ" });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+  try {
+    const { clinical_data } = req.body; // เป็น Object เช่น { blood_test: 'negative', prep: 'prep_with_blood' }
+    await db.query(
+      "UPDATE mastercases SET clinical_data = ? WHERE id = ?",
+      [JSON.stringify(clinical_data), req.params.id]
+    );
+    res.json({ message: "บันทึกข้อมูลทางคลินิกสำเร็จ" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // 🟢 1. API ใหม่สำหรับอัปเดตสถานะนัดหมาย (Quick Action: เช็คอิน/ยกเลิก)
 router.patch('/appointments/:id/status', async (req, res) => {
-    try {
-        const { status } = req.body;
-        await db.query(
-            "UPDATE appointments SET status = ? WHERE id = ?", 
-            [status, req.params.id]
-        );
-        res.json({ message: "อัปเดตสถานะการนัดหมายสำเร็จ" });
-    } catch (error) {
-        console.error("Update Appt Status Error:", error);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดในการอัปเดตสถานะนัดหมาย" });
-    }
+  try {
+    const { status } = req.body;
+    await db.query(
+      "UPDATE appointments SET status = ? WHERE id = ?",
+      [status, req.params.id]
+    );
+    res.json({ message: "อัปเดตสถานะการนัดหมายสำเร็จ" });
+  } catch (error) {
+    console.error("Update Appt Status Error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการอัปเดตสถานะนัดหมาย" });
+  }
 });
 
 // 🟢 2. แก้ไข API ปิดเคสเดิม ให้มียกเลิกนัดค้างอยู่อัตโนมัติ
 router.put('/master-cases/:id/close', async (req, res) => {
-    try {
-        const masterCaseId = req.params.id;
-        const { staff } = req.body;
+  try {
+    const masterCaseId = req.params.id;
+    const { staff } = req.body;
 
-        // 1. เปลี่ยนสถานะ Master Case เป็น 'Closed'
-        await db.query(
-            "UPDATE mastercases SET status = 'Closed' WHERE id = ?", 
-            [masterCaseId]
-        );
+    // 1. เปลี่ยนสถานะ Master Case เป็น 'Closed'
+    await db.query(
+      "UPDATE mastercases SET status = 'Closed' WHERE id = ?",
+      [masterCaseId]
+    );
 
-        // 2. เปลี่ยนสถานะฟอร์มย่อยทั้งหมดในเคสนี้
-        await db.query(
-            "UPDATE form_responses SET status = 'ปิดเคสเรียบร้อย' WHERE master_case_id = ?",
-            [masterCaseId]
-        );
+    // 2. เปลี่ยนสถานะฟอร์มย่อยทั้งหมดในเคสนี้
+    await db.query(
+      "UPDATE form_responses SET status = 'ปิดเคสเรียบร้อย' WHERE master_case_id = ?",
+      [masterCaseId]
+    );
 
-        // 3. 🟢 ยกเลิกนัดหมายที่ค้างอยู่ (Scheduled) ของเคสนี้ทั้งหมดอัตโนมัติ
-        await db.query(
-            "UPDATE appointments SET status = 'Cancelled' WHERE master_case_id = ? AND (status = 'Scheduled' OR status IS NULL)",
-            [masterCaseId]
-        );
+    // 3. 🟢 ยกเลิกนัดหมายที่ค้างอยู่ (Scheduled) ของเคสนี้ทั้งหมดอัตโนมัติ
+    await db.query(
+      "UPDATE appointments SET status = 'Cancelled' WHERE master_case_id = ? AND (status = 'Scheduled' OR status IS NULL)",
+      [masterCaseId]
+    );
 
-        res.json({ message: "ปิดเคสสำเร็จ" });
-    } catch (error) {
-        console.error("Close Case API Error:", error);
-        res.status(500).json({ message: "เกิดข้อผิดพลาดในการปิดเคส" });
+    res.json({ message: "ปิดเคสสำเร็จ" });
+  } catch (error) {
+    console.error("Close Case API Error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการปิดเคส" });
+  }
+});
+
+// ==========================================
+// CREATE WALK-IN CASE
+// ==========================================
+router.post('/cases', async (req, res) => {
+  try {
+
+    const data = req.body;
+
+    const rawIdentity = data.identity_value || '';
+    let encryptedIdentity = '';
+    let hashedIdentity = null;
+
+    if (rawIdentity.trim() !== '') {
+      encryptedIdentity = encrypt(rawIdentity);
+      hashedIdentity = hmacHash(rawIdentity);
+    } else {
+      const fallbackId = `walkin_${Date.now()}`;
+      encryptedIdentity = encrypt(fallbackId);
+      hashedIdentity = hmacHash(fallbackId);
     }
+    const summary = JSON.parse(JSON.stringify(data.summary_data || {}));
+
+    if (summary.citizenId) summary.citizenId = encrypt(summary.citizenId);
+    if (summary.idCard) summary.idCard = encrypt(summary.idCard);
+    if (summary.name) summary.name = encrypt(summary.name);
+    if (summary.phone) summary.phone = encrypt(summary.phone);
+
+    if (summary.display_name) summary.display_name = encrypt(String(summary.display_name));
+    if (summary.display_phone) summary.display_phone = encrypt(String(summary.display_phone));
+
+    if (summary.raw_answers) {
+      for (const key in summary.raw_answers) {
+
+        if (
+          key.includes('ชื่อ') ||
+          key.includes('เบอร์') ||
+          key.includes('โทร') ||
+          key.includes('บัตร') ||
+          key.includes('name') ||
+          key.includes('phone')
+        ) {
+          const value = summary.raw_answers[key];
+          if (value && typeof value === 'string' && value.trim() !== '') {
+            summary.raw_answers[key] = encrypt(value);
+          }
+        }
+      }
+    }
+
+    const sql = `
+      INSERT INTO form_responses (
+        form_id,
+        master_case_id,
+        submitted_at,
+        identity_value,
+        identity_hash,
+        summary_data,
+        status,
+        risk_level,
+        staff_id
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      data.form_id || 1,
+      data.master_case_id || null,
+      new Date(),
+      encryptedIdentity,
+      hashedIdentity,
+      JSON.stringify(summary),
+      data.status || 'รอดำเนินการ',
+      data.risk_level || 'ต่ำ',
+      data.staff_id || null
+    ];
+
+    const [result] = await db.query(sql, values);
+    res.status(201).json({
+      success: true,
+      id: result.insertId
+    });
+
+  } catch (err) {
+
+    console.error("CREATE CASE ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+// ==========================================
+// WALK-IN CASE ถอดรหัส
+// ==========================================
+router.get('/forms/:id/responses-v2', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [responseData] = await db.query(
+      `SELECT r.*, m.status_name 
+       FROM form_responses r
+       LEFT JOIN mastercases m ON r.master_case_id = m.id
+       WHERE r.form_id = ? ORDER BY r.submitted_at DESC`,
+      [id]
+    );
+
+    // 🟢 เพิ่มตัวแปลงข้อมูลและถอดรหัสแบบปลอดภัยก่อนส่งออกไปหน้าบ้านค่ะ
+    const parsedResponses = responseData.map(r => {
+      let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : (r.summary_data || {});
+
+      const decryptIfEncrypted = (text) => {
+        if (!text) return text;
+        try {
+          const decrypted = safeDecrypt(text);
+          return decrypted ? decrypted : text;
+        } catch (e) {
+          return text;
+        }
+      };
+
+      if (summary.citizenId) summary.citizenId = decryptIfEncrypted(summary.citizenId);
+      if (summary.idCard) summary.idCard = decryptIfEncrypted(summary.idCard);
+      if (summary.name) summary.name = decryptIfEncrypted(summary.name);
+      if (summary.phone) summary.phone = decryptIfEncrypted(summary.phone);
+
+      return {
+        ...r,
+        case_source: r.case_source || "assessment_form",
+        identity_value: safeDecrypt(r.identity_value),
+        summary_data: summary
+      };
+    });
+
+    res.json(parsedResponses);
+  } catch (error) {
+    console.error("Error fetching responses:", error);
+    res.status(500).json({ message: "Error fetching responses" });
+  }
+});
+
+router.get('/cases/:id', async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM form_responses WHERE id = ?", [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ message: "Case not found" });
+    const caseData = rows[0];
+    let summary = typeof caseData.summary_data === 'string' ? JSON.parse(caseData.summary_data) : (caseData.summary_data || {});
+
+    const decryptIfEncrypted = (text) => {
+      if (!text) return text;
+      try { const decrypted = safeDecrypt(text); return decrypted ? decrypted : text; } catch (e) { return text; }
+    };
+
+    if (summary.citizenId) summary.citizenId = decryptIfEncrypted(summary.citizenId);
+    if (summary.idCard) summary.idCard = decryptIfEncrypted(summary.idCard);
+    if (summary.name) summary.name = decryptIfEncrypted(summary.name);
+    if (summary.phone) summary.phone = decryptIfEncrypted(summary.phone);
+
+    caseData.identity_value = safeDecrypt(caseData.identity_value);
+    caseData.summary_data = summary;
+
+    res.json(caseData);
+  } catch (error) {
+    console.error("Error fetching case:", error);
+    res.status(500).json({ message: "Error fetching case" });
+  }
+});
+
+router.get('/all-cases', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT r.*, f.title as form_title, m.status_name 
+             FROM form_responses r
+             JOIN forms f ON r.form_id = f.id
+             LEFT JOIN mastercases m ON r.master_case_id = m.id
+             ORDER BY r.submitted_at DESC`
+    );
+    const parsedResponses = rows.map(r => {
+      let summary = typeof r.summary_data === 'string' ? JSON.parse(r.summary_data) : (r.summary_data || {});
+
+      const decryptIfEncrypted = (text) => {
+        if (!text) return text;
+        try { const decrypted = safeDecrypt(text); return decrypted ? decrypted : text; } catch (e) { return text; }
+      };
+
+      if (summary.citizenId) summary.citizenId = decryptIfEncrypted(summary.citizenId);
+      if (summary.idCard) summary.idCard = decryptIfEncrypted(summary.idCard);
+      if (summary.name) summary.name = decryptIfEncrypted(summary.name);
+      if (summary.phone) summary.phone = decryptIfEncrypted(summary.phone);
+
+      return {
+        ...r,
+        identity_value: safeDecrypt(r.identity_value),
+        summary_data: summary
+      };
+    });
+
+    res.json(parsedResponses);
+  } catch (error) {
+    console.error("Error fetching cases:", error);
+    res.status(500).json({ message: "Error fetching cases" });
+  }
 });
 
 module.exports = router;

@@ -6,11 +6,11 @@ import React, {
   useCallback,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Sidebar from "../../../components/Sidebar";
 import {
   saveFormToDb,
   getFormById,
   updateFormInDb,
+  getActiveClinics,
 } from "../../../services/api";
 import "./styles/FormBuilder.css";
 import Swal from "sweetalert2";
@@ -153,6 +153,11 @@ const FormBuilder = () => {
   const [formStatus, setFormStatus] = useState("draft");
   const [clinicType, setClinicType] = useState("general");
   const [formType, setFormType] = useState("Registration");
+  const [clinics, setClinics] = useState([]);
+
+  useEffect(() => {
+    getActiveClinics().then(res => setClinics(res.data.data || [])).catch(console.error);
+  }, []);
 
   const [isScheduled, setIsScheduled] = useState(false);
   const [publishStartDate, setPublishStartDate] = useState("");
@@ -1085,9 +1090,7 @@ const FormBuilder = () => {
         className="sfb-admin-layout"
         style={{ backgroundColor: "var(--bg-color)" }}
       >
-        <Sidebar activeKey="forms" />
-
-        {isLoading ? (
+{isLoading ? (
           <main
             className="sfb-builder-container"
             style={{
@@ -1171,13 +1174,15 @@ const FormBuilder = () => {
                       verticalAlign: "middle",
                     }}
                   >
-                    {clinicType === "teenager"
-                      ? "คลินิกวัยรุ่น"
-                      : clinicType === "behavior"
-                        ? "คลินิกปLSM"
-                        : clinicType === "sti"
-                          ? "คลินิกโรคติดต่อฯ"
-                          : "ทั่วไป"}
+                    {(() => {
+                      if (!clinicType || clinicType === "general") return "ทั่วไป";
+                      const c = clinics.find(x => x.slug === clinicType);
+                      if (c) return c.name;
+                      if (clinicType === "teenager") return "คลินิกวัยรุ่น";
+                      if (clinicType === "behavior") return "คลินิกปLSM";
+                      if (clinicType === "sti") return "คลินิกโรคติดต่อฯ";
+                      return clinicType;
+                    })()}
                   </span>
                   <span
                     className="sfb-badge-type"

@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import "./RiskCases.css";
-import Sidebar from "../../components/Sidebar";
 import CaseTable from "../../components/case/CaseTable";
 import CaseDetailModal from "../../components/case/CaseDetailModal";
-import { getForms, getFormById, getFormResponses } from "../../services/api";
+import { getForms, getFormById, getFormResponses, getActiveClinics } from "../../services/api";
 import { FiFolder, FiSettings, FiSearch, FiChevronDown, FiLayers, FiCalendar } from "react-icons/fi";
 
 const FACULTIES = [
@@ -12,12 +11,25 @@ const FACULTIES = [
   "(7) สำนักวิชาทันตแพทยศาสตร์", "(8) สำนักวิชาสาธารณสุขศาสตร์", "(9) สำนักวิชาศาสตร์และศิลป์ดิจิทัล", "อื่นๆ"
 ];
 
-const RC_CLINIC_INFO = {
-  general: { id: 'general', text: 'ทั่วไป', color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
-  teenager: { id: 'teenager', text: 'คลินิกวัยรุ่น', color: '#0284c7', bg: '#e0f2fe', border: '#7dd3fc' },
-  behavior: { id: 'behavior', text: 'คลินิกLSM', color: '#166534', bg: '#dcfce7', border: '#86efac' },
-  sti: { id: 'sti', text: 'คลินิกโรคติดต่อฯ', color: '#be185d', bg: '#fce7f3', border: '#f9a8d4' }
-};
+const CLINIC_COLORS = ['#e0f2fe', '#dcfce7', '#fce7f3', '#fef3c7', '#e0e7ff', '#f3e8ff'];
+const CLINIC_TEXT_COLORS = ['#0284c7', '#166534', '#be185d', '#d97706', '#4338ca', '#7e22ce'];
+const CLINIC_BORDER_COLORS = ['#7dd3fc', '#86efac', '#f9a8d4', '#fcd34d', '#a5b4fc', '#d8b4fe'];
+
+function getClinicConfig(slug, clinicsList = []) {
+  if (slug === 'general') return { id: 'general', text: 'ทั่วไป', color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
+  const clinic = clinicsList.find(c => c.slug === slug);
+  if (!clinic) return { id: slug, text: slug || '-', color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
+  
+  const index = clinicsList.findIndex(c => c.slug === slug);
+  const colorIndex = index % CLINIC_COLORS.length;
+  return {
+    id: slug,
+    text: clinic.name,
+    bg: CLINIC_COLORS[colorIndex],
+    color: CLINIC_TEXT_COLORS[colorIndex],
+    border: CLINIC_BORDER_COLORS[colorIndex]
+  };
+}
 
 function getRiskLevel(summary_data) {
   const scoreResults = summary_data?.score_results || [];
@@ -88,10 +100,12 @@ export default function RiskCases() {
   const [faculty, setFaculty] = useState("");
   const [selectedCase, setSelectedCase] = useState(null);
   const [forms, setForms] = useState([]);
+  const [clinics, setClinics] = useState([]);
   const [selectedFormId, setSelectedFormId] = useState("");
   const [currentFormDetails, setCurrentFormDetails] = useState(null);
   const [responses, setResponses] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialSetup, setIsInitialSetup] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [visibleColumns, setVisibleColumns] = useState([]);
   const [showColMenu, setShowColMenu] = useState(false);
   const colMenuRef = useRef(null);
@@ -111,17 +125,30 @@ export default function RiskCases() {
   }, []);
 
   useEffect(() => {
-    getForms("latest").then(res => {
-      setForms(res.data);
-      const publishedForms = res.data.filter(f => f.status === 'published');
-      if (publishedForms.length > 0) {
-        setSelectedFormId(publishedForms[0].id);
-        setFormStatusFilter('published');
-      } else if (res.data.length > 0) {
-        setSelectedFormId(res.data[0].id);
-        setFormStatusFilter('all');
+    const fetchInitialData = async () => {
+      try {
+        const [clinicRes, formsRes] = await Promise.all([
+          getActiveClinics().catch(() => ({ data: { data: [] } })),
+          getForms("latest").catch(() => ({ data: [] }))
+        ]);
+        
+        setClinics(clinicRes.data.data || []);
+        const fetchedForms = formsRes.data || [];
+        setForms(fetchedForms);
+
+        const publishedForms = fetchedForms.filter(f => f.status === 'published');
+        if (publishedForms.length > 0) {
+          setSelectedFormId(publishedForms[0].id);
+          setFormStatusFilter('published');
+        } else if (fetchedForms.length > 0) {
+          setSelectedFormId(fetchedForms[0].id);
+          setFormStatusFilter('all');
+        }
+      } finally {
+        setIsInitialSetup(false);
       }
-    }).catch(() => {})
+    };
+    fetchInitialData();
   }, []);
 
   const filteredFormsList = useMemo(() => {
@@ -146,7 +173,11 @@ export default function RiskCases() {
 
   useEffect(() => {
     const fetchAllData = async () => {
-      if (!forms.length) return;
+      if (isInitialSetup) return;
+      if (!forms.length) {
+        setIsLoading(false);
+        return;
+      }
 
       let targetFormId = selectedFormId;
       if (!targetFormId && forms.length > 0) {
@@ -246,7 +277,7 @@ export default function RiskCases() {
     setVisibleColumns(prev => prev.includes(qId) ? prev.filter(id => id !== qId) : [...prev, qId]);
 
   const selectedFormObj = forms.find(f => String(f.id) === String(selectedFormId));
-  const cInfo = selectedFormObj ? RC_CLINIC_INFO[selectedFormObj.clinic_type || 'general'] : null;
+  const cInfo = selectedFormObj ? getClinicConfig(selectedFormObj.clinic_type || 'general', clinics) : null;
 
   const allDynamicQuestions = (currentFormDetails?.questions || []).filter(
     q => q.type !== "section" && q.type !== "description"
@@ -263,8 +294,7 @@ export default function RiskCases() {
 
   return (
     <div className="admin-wrapper2">
-      <Sidebar activeKey="risk-cases" />
-      <main className="main-content">
+<main className="main-content">
         <div className="risk-container">
 
           {/* Header */}
@@ -273,13 +303,14 @@ export default function RiskCases() {
               <div>
                 <h2 className="rc-title">
                   <label className="rc-inside-title">เคสเสี่ยง:</label> {
-                    // 🟢 เช็คก่อนว่ามีฟอร์มในหมวดหมู่ที่เลือกไหม ถ้าไม่มีให้ขึ้น "ไม่มีข้อมูลแบบฟอร์ม" เลย
-                    filteredFormsList.length === 0
-                      ? "ไม่มีข้อมูลแบบฟอร์ม"
-                      : isLoading ? "กำลังโหลด..." : (currentFormDetails?.title || "ไม่พบชื่อแบบฟอร์ม")
+                    //  1. เช็ค isInitialSetup ก่อน
+                    isInitialSetup 
+                      ? "กำลังโหลด..."
+                      : filteredFormsList.length === 0
+                        ? "ไม่มีข้อมูลแบบฟอร์ม"
+                        : isLoading ? "กำลังโหลด..." : (currentFormDetails?.title || "ไม่พบชื่อแบบฟอร์ม")
                   }
                   
-                  {/* 🟢 เช็คด้วยว่าต้องมีฟอร์มถึงจะโชว์ป้ายชื่อคลินิก ป้องกันการแสดงป้ายผิดหมวดหมู่ */}
                   {filteredFormsList.length > 0 && cInfo && (
                     <span className="rc-title-badge" style={{ backgroundColor: cInfo.bg, color: cInfo.color, border: `1px solid ${cInfo.border}` }}>
                       {cInfo.text}
@@ -315,9 +346,11 @@ export default function RiskCases() {
               value={selectedFormId}
               onChange={setSelectedFormId}
               options={
-                filteredFormsList.length > 0
-                  ? filteredFormsList.map(f => ({ value: f.id, label: f.title }))
-                  : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
+                isInitialSetup
+                  ? [{ value: '', label: 'กำลังโหลดแบบฟอร์ม...' }]
+                  : filteredFormsList.length > 0
+                    ? filteredFormsList.map(f => ({ value: f.id, label: f.title }))
+                    : [{ value: '', label: '-- ไม่มีแบบฟอร์ม --' }]
               }
               style={{ borderColor: '#e53935' }}
             />
@@ -368,17 +401,18 @@ export default function RiskCases() {
             </div>
 
             <CustomDropdown
-  icon={FiFolder}
-  value={clinicFilter}
-  onChange={setClinicFilter}
-  options={[
-    { value: 'all', label: 'ทุกคลินิก' },
-    ...Object.values(RC_CLINIC_INFO).map(c => ({
-      value: c.id,
-      label: c.text
-    }))
-  ]}
-/>
+              icon={FiFolder}
+              value={clinicFilter}
+              onChange={setClinicFilter}
+              options={[
+                { value: 'all', label: 'ทุกคลินิก' },
+                { value: 'general', label: 'ทั่วไป' },
+                ...clinics.map(c => ({
+                  value: c.slug,
+                  label: c.name
+                }))
+              ]}
+            />
  
             {/* 4. สำนักวิชา */}
             <CustomDropdown
@@ -443,7 +477,7 @@ export default function RiskCases() {
             data={filteredData}
             questions={currentFormDetails?.questions || []}
             visibleColumns={visibleColumns}
-            isLoading={isLoading}
+            isLoading={isLoading || isInitialSetup}
             onSelectCase={setSelectedCase}
             viewMode="form" /* หน้า Risk ยึดมุมมอง Form เสมอตามโครงสร้างของคุณ */
           />

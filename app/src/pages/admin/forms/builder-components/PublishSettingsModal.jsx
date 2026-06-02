@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaCog, FaTimes, FaFileAlt, FaSyncAlt, FaChevronDown } from 'react-icons/fa';
+import { getActiveClinics } from '../../../../services/api';
 
 const PublishSettingsModal = ({ 
   isOpen, onClose, 
@@ -11,7 +12,14 @@ const PublishSettingsModal = ({
   publishEndDate, setPublishEndDate 
 }) => {
 
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [clinics, setClinics] = useState([]);
+
+  useEffect(() => {
+    getActiveClinics()
+      .then(res => setClinics(res.data.data || []))
+      .catch(err => console.error("Failed to load clinics", err));
+  }, []);
 
   if (!isOpen) return null;
 
@@ -148,9 +156,9 @@ const PublishSettingsModal = ({
             <label style={{ fontWeight: 'bold', fontSize: '14.5px', color: '#0f172a' }}>ประเภทคลินิก</label>
             <select value={clinicType} onChange={e => setClinicType(e.target.value)} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14.5px', outline: 'none' }}>
               <option value="general">ทั่วไป (ใช้ร่วมกัน)</option>
-              <option value="teenager">คลินิกวัยรุ่น</option>
-              <option value="behavior">คลินิกLSM</option>
-              <option value="sti">คลินิกโรคติดต่อฯ</option>
+              {clinics.map(c => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
             </select>
           </div>
 

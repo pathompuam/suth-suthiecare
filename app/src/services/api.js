@@ -31,6 +31,17 @@ export const updateFormInDb  = (id, formData)   => api.put(`/forms/${id}`, formD
 export const duplicateFormInDb = (formId) => {
   return api.post(`/forms/${formId}/duplicate`);
 };
+
+
+// ── Clinics ──
+export const getActiveClinics = () => api.get('/clinics');
+export const getAllClinics = () => api.get('/clinics/all');
+export const getClinicByIdOrSlug = (idOrSlug) => api.get(`/clinics/${idOrSlug}`);
+export const createClinic = (data) => api.post('/clinics', data);
+export const updateClinic = (id, data) => api.put(`/clinics/${id}`, data);
+export const deleteClinic = (id) => api.delete(`/clinics/${id}`);
+export const reorderClinics = (order) => api.patch('/clinics/reorder', { order });
+
 // ── เพิ่มฟังก์ชันใหม่สำหรับอัปเดตรูปปกโดยเฉพาะ ──
 export const updateFormImageOnly = (id, imageData) => api.patch(`/forms/${id}/image`, imageData);
 export const deleteFormInDb  = (id)             => api.delete(`/forms/${id}`);
@@ -85,6 +96,11 @@ export const getStatusOptions = (clinic_type = 'all') => api.get('/status-option
 export const updateClinicalData = (id, data) => api.put(`/master-cases/${id}/clinical-data`, data);
 export const createStatusOption = (data) => api.post('/case-statuses', data);
 export const deactivateStatusOption = (id) => api.put(`/case-statuses/${id}/deactivate`)
+export const createCase = (data) => api.post("/cases", data);
+export const getStaffs = () => api.get('/staffs');
+export const createStaff = (data) => api.post('/staffs', data);
+export const deleteStaff = (id) => api.delete(`/staffs/${id}`);
+
 // ── Secure Tokens (สำหรับเข้ารหัสลิงก์แบบประเมิน) ──
 export const generateSecureToken = (data) => api.post('/generate-token', data);
 export const decodeSecureToken = (data) => api.post('/decode-token', data);

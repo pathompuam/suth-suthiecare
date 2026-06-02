@@ -16,12 +16,12 @@ router.get('/banners', async (req, res) => {
 // 2. เพิ่มแบนเนอร์ใหม่
 router.post('/banners', async (req, res) => {
     try {
-        const { image, filename } = req.body;
+        const { image, filename, link } = req.body;
         const [max] = await db.query("SELECT MAX(position) as maxPos FROM banners");
         const position = (max[0].maxPos || 0) + 1;
         const [result] = await db.query(
-            "INSERT INTO banners (image, filename, position) VALUES (?, ?, ?)",
-            [image, filename, position]
+            "INSERT INTO banners (image, filename, link, position) VALUES (?, ?, ?, ?)",
+            [image, filename,link || null, position]
         );
         res.json({ message: "Banner created", id: result.insertId });
     } catch (err) {
@@ -29,14 +29,16 @@ router.post('/banners', async (req, res) => {
     }
 });
 
-// ✅ 3. แก้ไขรูปแบนเนอร์ — ต้องอยู่ก่อน DELETE /:id
+// 3. แก้ไขรูปแบนเนอร์ — ต้องอยู่ก่อน DELETE /:id
 router.patch('/banners/:id/image', async (req, res) => {
     try {
-        const { image, filename } = req.body;
+        const { image, filename, link } = req.body;
         if (!image) return res.status(400).json({ message: "ไม่มีรูปภาพ" });
+        const finalLink = (link && link.trim() !== "") ? link.trim() : null;
+
         await db.query(
-            "UPDATE banners SET image = ?, filename = ? WHERE id = ?",
-            [image, filename || 'banner.jpg', req.params.id]
+            "UPDATE banners SET image = ?, filename = ?, link = ? WHERE id = ?",
+            [image, filename || 'banner.jpg', finalLink, req.params.id]
         );
         res.json({ success: true, message: "อัปเดตแบนเนอร์สำเร็จ" });
     } catch (err) {
@@ -67,5 +69,6 @@ router.post('/banners/reorder', async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
 
 module.exports = router;
