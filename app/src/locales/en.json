@@ -1,0 +1,44 @@
+{
+  "sutlanding": {
+    "title": "Registration Form",
+    "subtitle_highlight": "Health Consultation",
+    "description": "Registration Center for Clinical Consultation, Suranaree University of Technology Hospital",
+    "btn_start": "Get Started",
+    "btn_steps": "How it works",
+    "banner_placeholder": "Caring for your health",
+    "select_clinic": "Select Clinic",
+    "select_clinic_desc": "Please select a clinic first",
+    "assessment_form": "Assessment Form",
+    "assessment_form_desc": "Choose your assessment form",
+    "btn_back": "Back",
+    "loading": "Loading data...",
+    "no_clinic": "No clinic data found",
+    "no_form_in_clinic": "No assessment forms in this clinic",
+    "steps_title": "Simple Steps to Use",
+    "step1_title": "1. Select Assessment",
+    "step1_desc": "Find the form that matches your symptoms from the menu above",
+    "step2_title": "2. Fill in the Information",
+    "step2_desc": "Answer truthfully. Your information will be kept confidential.",
+    "step3_title": "3. Assessment Result",
+    "step3_desc": "The system will analyze your data and show the results with preliminary advice",
+    "step4_title": "4. Wait for Contact",
+    "step4_desc": "Our team will review your information and contact you as soon as possible",
+    "download_manual": "Download User Manual (PDF)",
+    "footer_desc": "Registration Center for Clinical Consultation, Suranaree University of Technology Hospital",
+    "contact_us": "Contact Us",
+    "address": "111 University Ave, Suranaree, Muang, Nakhon Ratchasima 30000",
+    "tel": "Phone: 044-376555",
+    "website": "Website: www.suth.go.th",
+    "copyright": "© {{year}} Suranaree University of Technology Hospital. All rights reserved."
+  },
+  "nav": {
+    "history": "Check History",
+    "staff": "For Staff"
+  },
+  "form_card": {
+    "no_title": "No Form Title",
+    "default_desc": "Click to assess risk",
+    "loading": "Loading...",
+    "participants": "{{count}} Participants"
+  }
+}

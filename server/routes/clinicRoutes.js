@@ -96,14 +96,14 @@ router.get('/:idOrSlug', async (req, res) => {
 // ✅ INSERT ใส่ sort_order ด้วย
 router.post('/', async (req, res) => {
   try {
-    const { slug, name, description, image, bg, is_active, show_icon } = req.body;
+    const { slug, name, name_en, description, image, bg, is_active, show_icon } = req.body;
     if (!slug || !name) return res.status(400).json({ error: 'Slug and name are required' });
 
     const [[{ count }]] = await db.query('SELECT COUNT(*) as count FROM clinics');
 
     const [result] = await db.query(
-      'INSERT INTO clinics (slug, name, description, image, bg, is_active, show_icon, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [slug, name, description || null, image || null, bg || null,
+      'INSERT INTO clinics (slug, name, name_en, description, image, bg, is_active, show_icon, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [slug, name, name_en || null, description || null, image || null, bg || null,
        is_active ?? 1, show_icon ?? 1, count]
     );
     res.status(201).json({ message: 'Clinic created', id: result.insertId });
@@ -116,12 +116,12 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { slug, name, description, image, bg, is_active, show_icon } = req.body;
+    const { slug, name, name_en, description, image, bg, is_active, show_icon } = req.body;
     if (!slug || !name) return res.status(400).json({ error: 'Slug and name are required' });
 
     const [result] = await db.query(
-      'UPDATE clinics SET slug=?, name=?, description=?, image=?, bg=?, is_active=?, show_icon=? WHERE id=?',
-      [slug, name, description || null, image || null, bg || null, is_active, show_icon ?? 1, id]
+      'UPDATE clinics SET slug=?, name=?, name_en=?, description=?, image=?, bg=?, is_active=?, show_icon=? WHERE id=?',
+      [slug, name, name_en || null, description || null, image || null, bg || null, is_active, show_icon ?? 1, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Clinic not found' });
     res.json({ message: 'Clinic updated successfully' });
