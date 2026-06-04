@@ -1,0 +1,582 @@
+/* ============================================================
+   HELP CENTER MANAGEMENT MAIN LAYOUT
+   ============================================================ */
+.hc-admin-page {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background-color: #f8fafc;
+  font-family: 'Noto Sans Thai', sans-serif;
+}
+
+.hc-admin-page input,
+.hc-admin-page button,
+.hc-admin-page select,
+.hc-admin-page textarea {
+  font-family: 'Noto Sans Thai', sans-serif;
+}
+
+.hc-main {
+  flex: 1;
+  padding: 30px 40px;
+  background-color: #f8fafc;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================
+   HEADER COMPONENT
+   ============================================================ */
+.hc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff !important;
+  border-radius: 12px;
+  padding: 25px 35px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-left: 6px solid #F47932; /* สีส้ม SUTHieCare */
+}
+
+.hc-header-info h1 {
+  font-size: 26px;
+  color: #F47932 !important;
+  margin: 0 0 6px 0;
+  font-weight: 800;
+}
+
+.hc-header-hint {
+  margin: 6px 0 0 0 !important;
+  font-size: 13.5px !important;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ============================================================
+   BUTTONS SYSTEM
+   ============================================================ */
+.hc-btn-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #F47932; 
+  color: #ffffff;
+  border: none;
+  padding: 12px 26px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(244, 121, 50, 0.3);
+}
+
+.hc-btn-add:hover {
+  background-color: #ea580c; 
+  transform: translateY(-2px); 
+  box-shadow: 0 8px 25px rgba(244, 121, 50, 0.4);
+}
+
+.hc-btn-search {
+  background-color: #0f172a;
+  color: white;
+  border: none;
+  padding: 11px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hc-btn-search:hover {
+  background-color: #1e293b;
+}
+
+/* ============================================================
+   FILTER PANEL
+   ============================================================ */
+.hc-filter-panel {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  border: 1px solid #f1f1f1;
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+/* ============================================================
+   TABLE CONTAINER & COLUMN CONTROL
+   ============================================================ */
+.hc-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #f1f1f1;
+  overflow-x: auto;
+}
+
+.hc-table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0;
+  min-width: 1100px;
+}
+
+.hc-table th {
+  color: #ffffff !important;           
+  background-color: #F47932 !important; 
+  font-size: 15px;
+  font-weight: 600;                     
+  padding: 18px 20px;                   
+  text-align: left; 
+  border: none !important;     
+  white-space: nowrap;
+}
+
+.hc-table thead tr th:first-child { border-top-left-radius: 12px; }
+.hc-table thead tr th:last-child { border-top-right-radius: 12px; }
+.hc-table tbody tr:last-child td:first-child { border-bottom-left-radius: 12px; }
+.hc-table tbody tr:last-child td:last-child { border-bottom-right-radius: 12px; }
+
+.hc-table td {
+  padding: 16px 20px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  vertical-align: middle;
+  background-color: #ffffff;
+}
+
+.hc-table tbody tr:hover td {
+  background-color: #fffaf7 !important; 
+}
+
+/* กำหนดขนาดสัดส่วนคอลัมน์ FAQ โดยเฉพาะ */
+.hc-col-question { font-weight: 600; color: #0f172a; min-width: 250px; }
+.hc-col-clinic { width: 160px; font-weight: 500; }
+.hc-col-category { width: 160px; }
+.hc-col-homepage { width: 120px; text-align: center !important; }
+.hc-col-actions { width: 120px; text-align: center !important; }
+
+/* ============================================================
+   BADGES & UI COMPONENTS
+   ============================================================ */
+.hc-badge-category {
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.hc-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hc-status-badge.active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.hc-status-badge.inactive {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+}
+
+.hc-empty-state {
+  text-align: center;
+  color: #94a3b8;
+  font-weight: 600;
+  padding: 50px !important;
+}
+
+/* ============================================================
+   ACTIONS SYSTEM
+   ============================================================ */
+.hc-actions-wrapper {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.hc-btn-action-edit, .hc-btn-action-delete {
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+}
+
+.hc-btn-action-edit:hover {
+  background: #f0f9f9 !important; 
+  color: #3b82f6 !important; 
+  border-color: #3b82f6 !important; 
+  transform: translateY(-2px);
+}
+
+.hc-btn-action-delete:hover {
+  background: #fef2f2 !important; 
+  color: #ef4444 !important; 
+  border-color: #fee2e2 !important; 
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   MODALS & FORMS
+   ============================================================ */
+.hc-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+
+.hc-modal-content {
+  background: white;
+  width: 100%;
+  max-width: 650px;
+  border-radius: 16px;
+  padding: 32px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.hc-modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  padding-bottom: 20px;     
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.hc-form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hc-form-group label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 14.5px;
+}
+
+.hc-form-group input[type="text"],
+.hc-form-group select,
+.hc-form-group textarea {
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+  background-color: #ffffff;
+}
+
+.hc-form-group input[type="text"]:focus,
+.hc-form-group select:focus,
+.hc-form-group textarea:focus {
+  border-color: #F47932;
+  box-shadow: 0 0 0 3px rgba(244, 121, 50, 0.15);
+}
+
+.hc-form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.hc-form-row .hc-form-group {
+  flex: 1;
+}
+
+/* ============================================================
+   SUTHIE CARE PREMIUM TOGGLE SWITCH
+   ============================================================ */
+.hc-toggle-container {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.hc-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.hc-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.hc-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.hc-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+.hc-switch input:checked + .hc-slider {
+  background-color: #F47932; /* สีส้มแบรนด์เมื่อเปิดใช้งาน */
+}
+
+.hc-switch input:checked + .hc-slider:before {
+  transform: translateX(24px);
+}
+
+/* ============================================================
+   MODAL ACTIONS
+   ============================================================ */
+.hc-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.hc-btn-cancel, .hc-btn-save {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-size: 15px;
+}
+
+.hc-btn-cancel {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+.hc-btn-cancel:hover {
+  background-color: #e2e8f0;
+}
+
+.hc-btn-save {
+  background-color: #F47932;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(244, 121, 50, 0.3);
+  transition: all 0.2s;
+}
+
+.hc-btn-save:hover {
+  background-color: #ea580c;
+  transform: translateY(-1px);
+}
+/* ============================================================
+   🌟 ปรับปรุงปุ่มจัดการไอคอนภายในตารางมอดัลหมวดหมู่ย่อยให้แสดงผลชัดเจน
+   ============================================================ */
+.hc-modal-content .hc-btn-action-edit, 
+.hc-modal-content .hc-btn-action-delete {
+  width: 32px !important;
+  height: 32px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #f8fafc !important;
+  padding: 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.hc-modal-content .hc-btn-action-edit svg {
+  color: #3b82f6 !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.hc-modal-content .hc-btn-action-delete svg {
+  color: #ef4444 !important; 
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.hc-modal-content .hc-btn-action-edit:hover {
+  background-color: #eff6ff !important;
+  border-color: #3b82f6 !important;
+}
+
+.hc-modal-content .hc-btn-action-delete:hover {
+  background-color: #fef2f2 !important;
+  border-color: #ef4444 !important;
+}
+
+.ql-editor {
+  min-height: 220px;
+  max-height: 400px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  font-family: 'Kanit', sans-serif; 
+}
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background-color: #f8fafc;
+}
+
+.ql-container.ql-snow {
+  border: none !important;
+}
+.hc-form-group div[style*="overflow: hidden"] {
+  overflow: visible !important; 
+}
+.ql-snow .ql-tooltip {
+  z-index: 9999 !important; 
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important; 
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  left: 50% !important; 
+  transform: translateX(-50%) !important;
+}
+.ql-snow .ql-tooltip input[type=text] {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  font-size: 13px !important;
+  font-family: 'Kanit', sans-serif !important;
+  width: 200px !important; 
+}
+.ql-snow .ql-tooltip::before {
+  content: "วางลิงก์ที่นี่: " !important;
+  font-family: 'Kanit', sans-serif !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+}
+.ql-snow .ql-tooltip a.ql-action::after {
+  content: "บันทึก" !important;
+  font-family: 'Kanit', sans-serif !important;
+  background-color: #4caf50 !important;
+  color: white !important;
+  padding: 4px 10px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+}
+.ql-snow .ql-tooltip a.ql-remove::before {
+  content: "ลบลิงก์" !important;
+  font-family: 'Kanit', sans-serif !important;
+  color: #ef4444 !important; 
+  margin-left: 8px !important;
+}
+.ql-snow .ql-tooltip:not(.ql-editing) a.ql-preview {
+  font-family: 'Kanit', sans-serif !important;
+  font-size: 13px !important;
+  color: #3b82f6 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  visibility: hidden; 
+  position: relative;
+}
+.ql-snow .ql-tooltip:not(.ql-editing) a.ql-preview::before {
+  content: "เปิดลิงก์ 🌐";
+  visibility: visible; 
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+.hc-actions-cell, 
+td button, 
+.action-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+td button svg, 
+td button i,
+.hc-btn-edit svg,
+.hc-btn-delete svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.fa-edit, .fa-trash-alt, .fa-trash {
+  font-size: 16px !important;
+  visibility: visible !important;
+  display: inline-block !important;
+}
+/* ============================================================
+   RESPONSIVE DESIGN SYSTEM
+   ============================================================ */
+@media (max-width: 992px) {
+  .hc-filter-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hc-btn-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .hc-main { padding: 16px; }
+  .hc-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+  .hc-form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
