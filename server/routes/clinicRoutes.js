@@ -32,6 +32,30 @@ router.patch('/reorder', async (req, res) => {
   }
 });
 
+router.patch('/:id/toggle-help-center', async (req, res) => {
+    const { id } = req.params;
+    const { show_in_help_center } = req.body; 
+
+    try {
+        const query = `UPDATE clinics SET show_in_help_center = ? WHERE id = ?`;
+        const [result] = await db.query(query, [show_in_help_center, id]); 
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'ไม่พบคลินิกที่ระบุ' });
+        }
+
+        res.json({ 
+            success: true, 
+            message: show_in_help_center === 1 
+                ? 'เปิดการแสดงผลบนหน้าช่วยเหลือเรียบร้อยแล้ว' 
+                : 'ซ่อนการแสดงผลบนหน้าช่วยเหลือเรียบร้อยแล้ว' 
+        });
+    } catch (error) {
+        console.error('Error toggling help center:', error);
+        res.status(500).json({ success: false, error: 'เกิดข้อผิดพลาดบนเซิร์ฟเวอร์: ' + error.message });
+    }
+});
+
 // ✅ ORDER BY sort_order แล้ว
 router.get('/', async (req, res) => {
   try {
@@ -117,5 +141,6 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete clinic' });
   }
 });
+
 
 module.exports = router;
