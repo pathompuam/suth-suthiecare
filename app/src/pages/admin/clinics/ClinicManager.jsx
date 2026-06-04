@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAllClinics, createClinic, updateClinic, deleteClinic, reorderClinics } from '../../../services/api';
+import { getAllClinics, createClinic, updateClinic, deleteClinic, reorderClinics, toggleClinicHelpCenter } from '../../../services/api';
 import { FaPlus, FaEdit, FaTrash, FaImage, FaCheckCircle, FaTimesCircle, FaGripVertical } from 'react-icons/fa';
 import './ClinicManager.css';
 import Swal from 'sweetalert2';
@@ -51,7 +51,7 @@ class ErrorBoundary extends React.Component {
 // ============================================================
 // SortableRow — แถวในตารางที่ลากได้
 // ============================================================
-function SortableRow({ clinic, onEdit, onDelete }) {
+function SortableRow({ clinic, onEdit, onDelete, handleToggleHelpCenter }) {
   const {
     attributes,
     listeners,
@@ -99,6 +99,18 @@ function SortableRow({ clinic, onEdit, onDelete }) {
           : <span className="cm-status inactive"><FaTimesCircle /> ปิดใช้งาน</span>
         }
       </td>
+      <td className="cm-col-help-center">
+        <div className="flex items-center justify-center">
+          <label className="cm-toggle">
+            <input 
+              type="checkbox" 
+              checked={clinic.show_in_help_center === 1}
+              onChange={() => handleToggleHelpCenter(clinic.id, clinic.show_in_help_center)}
+            />
+            <span className="cm-slider"></span>
+          </label>
+        </div>
+      </td>
       <td className="cm-col-actions">
         <div className="cm-actions">
           <button className="cm-btn-edit" onClick={() => onEdit(clinic)} title="แก้ไข"><FaEdit /></button>
@@ -121,7 +133,7 @@ function ClinicManagerContent() {
   const [editingClinic, setEditingClinic] = useState(null);
 
   const [formData, setFormData] = useState({
-    slug: '', name: '', description: '',
+    slug: '', name: '', name_en: '', description: '',
     image: '', bg: '', is_active: 1, show_icon: 1
   });
 
@@ -198,13 +210,13 @@ function ClinicManagerContent() {
     if (clinic) {
       setEditingClinic(clinic);
       setFormData({
-        slug: clinic.slug || '', name: clinic.name || '',
+        slug: clinic.slug || '', name: clinic.name || '', name_en: clinic.name_en || '',
         description: clinic.description || '', image: clinic.image || '',
         bg: clinic.bg || '', is_active: clinic.is_active ?? 1, show_icon: clinic.show_icon ?? 1
       });
     } else {
       setEditingClinic(null);
-      setFormData({ slug: '', name: '', description: '', image: '', bg: '', is_active: 1, show_icon: 1 });
+      setFormData({ slug: '', name: '', name_en: '', description: '', image: '', bg: '', is_active: 1, show_icon: 1 });
     }
     setIsModalOpen(true);
   };
@@ -296,6 +308,48 @@ function ClinicManagerContent() {
       }
     }
   };
+  
+const handleToggleHelpCenter = async (clinicId, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 1 ? 0 : 1; 
+      
+      MySwal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        allowOutsideClick: false,
+        didOpen: () => MySwal.showLoading()
+      });
+      const response = await toggleClinicHelpCenter(clinicId, newStatus);
+    
+      MySwal.close();
+      if (response.data && response.data.success) {
+        MySwal.fire({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: response.data.message,
+          confirmButtonColor: '#F47932'
+        }).then(() => {
+          fetchClinics(); 
+        });
+      } else {
+        MySwal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: response.data?.error || 'ไม่สามารถเปลี่ยนสถานะได้',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    } catch (error) {
+      MySwal.close();
+      console.error("Error updating help center status:", error);
+      const errorMsg = error.response?.data?.error || 'ไม่สามารถเชื่อมต่อระบบหลังบ้านได้สำเร็จ';
+      MySwal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errorMsg,
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  };
 
   return (
     <div className="cm-admin-page">
@@ -338,6 +392,7 @@ function ClinicManagerContent() {
                     <th className="cm-col-slug">รหัสอ้างอิง (Slug)</th>
                     <th className="cm-col-name">ชื่อคลินิก</th>
                     <th className="cm-col-status">สถานะ</th>
+                    <th className="cm-col-help-center">แสดงบนหน้าช่วยเหลือ</th>
                     <th className="cm-col-actions">จัดการ</th>
                   </tr>
                 </thead>
@@ -352,6 +407,7 @@ function ClinicManagerContent() {
                         clinic={clinic}
                         onEdit={handleOpenModal}
                         onDelete={handleDelete}
+                        handleToggleHelpCenter={handleToggleHelpCenter}
                       />
                     )) : (
                       <tr>
@@ -380,8 +436,12 @@ function ClinicManagerContent() {
                   <small>ใช้เชื่อมโยงกับฟอร์มและระบบ (ห้ามซ้ำและแก้ไขไม่ได้หลังจากสร้าง)</small>
                 </div>
                 <div className="cm-form-group">
-                  <label>ชื่อคลินิก <span className="cm-required">*</span></label>
+                  <label>ชื่อคลินิก (ภาษาไทย) <span className="cm-required">*</span></label>
                   <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="เช่น คลินิกวัยรุ่น" required />
+                </div>
+                <div className="cm-form-group">
+                  <label>ชื่อคลินิก (English)</label>
+                  <input type="text" name="name_en" value={formData.name_en} onChange={handleChange} placeholder="e.g. Teenager Clinic" />
                 </div>
                 <div className="cm-form-group">
                   <label>รายละเอียด</label>

@@ -4,6 +4,7 @@ import React, { lazy, useEffect, useState } from "react";
 import Login from "./pages/login/Login";
 import SutLanding2 from "./pages/sutlanding/SutLanding2";
 import ClinicManager from "./pages/admin/clinics/ClinicManager";
+import HelpCenterManager from "./pages/admin/HelpCenterManager"; 
 
 // ✅ Lazy load ทุกหน้าที่เหลือ
 const AssessmentResult = lazy(() => import("./pages/result/AssessmentResult"));
@@ -122,6 +123,7 @@ function App() {
             <Route path="risk-cases" element={<RiskCases />} />
             <Route path="banner" element={<BannerManagement />} />
             <Route path="clinics" element={<ClinicManager />} />
+            <Route path="help-center" element={<HelpCenterManager />} />
           </Route>
         </Routes>
     </BrowserRouter>
