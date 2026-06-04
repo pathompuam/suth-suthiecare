@@ -14,6 +14,7 @@ import {
 } from "../../../services/api";
 import Swal from "sweetalert2";
 import "../../admin/forms/styles/FormPreview.css";
+import LanguageSwitcher from "../../../components/LanguageSwitcher";
 
 // 🟢 นำเข้า Component และ Helper ที่แยกออกไป
 import {
@@ -685,13 +686,18 @@ const FormView = () => {
       )}
 
    {!isPreviewMode && (
-  <button
-    className="form-view-back-btn"
-    onClick={() => navigate(-1)}
-    title="ย้อนกลับ"
-  >
-    <FiArrowLeft />
-  </button>
+  <>
+    <button
+      className="form-view-back-btn"
+      onClick={() => navigate(-1)}
+      title="ย้อนกลับ"
+    >
+      <FiArrowLeft />
+    </button>
+    <div style={{ position: 'fixed', top: '15px', right: '15px', zIndex: 1000 }}>
+      <LanguageSwitcher darkText={true} />
+    </div>
+  </>
 )}
 
       {bannerType !== "none" && (
