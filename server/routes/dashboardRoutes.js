@@ -5,10 +5,11 @@ const db = require('../config/db');
 
 // 🟢 นำเข้าระบบถอดรหัส (สำหรับใช้นับสถิตินักศึกษา/ความเสี่ยง)
 const { decrypt } = require('../utils/encryption');
+const { verifyToken } = require('../middleware/authMiddleware');
 const safeDecrypt = (val) => decrypt(val) || val;
 
 // 1. สรุปข้อมูล Dashboard
-router.get('/dashboard/summary', async (req, res) => {
+router.get('/dashboard/summary', verifyToken, async (req, res) => {
     try {
         const [totalRes] = await db.query("SELECT COUNT(*) as total FROM form_responses");
         const [todayRes] = await db.query("SELECT COUNT(*) as today FROM form_responses WHERE DATE(submitted_at) = CURDATE()");
@@ -25,7 +26,7 @@ router.get('/dashboard/summary', async (req, res) => {
 
 
 // 3. ดึงการตั้งค่าหน้า Dashboard
-router.get('/dashboard-settings/settings', async (req, res) => {
+router.get('/dashboard-settings/settings', verifyToken, async (req, res) => {
     try {
         const role_id = 1; // Dashboard ส่วนกลางสำหรับ Admin
         const [rows] = await db.query("SELECT * FROM dashboard_settings WHERE role_id = ?", [role_id]);
@@ -37,7 +38,7 @@ router.get('/dashboard-settings/settings', async (req, res) => {
 });
  
 // 4. บันทึกการตั้งค่าหน้า Dashboard
-router.post('/dashboard-settings/settings', async (req, res) => {
+router.post('/dashboard-settings/settings', verifyToken, async (req, res) => {
     try {
         const role_id = 1; 
         const { formId, charts } = req.body;
@@ -59,7 +60,7 @@ router.post('/dashboard-settings/settings', async (req, res) => {
 });
 
 // 5. ข้อมูลกราฟ (Chart) ดึงคำตอบจริงจาก DB
-router.get('/charts/:formId/:questionId', async (req, res) => {
+router.get('/charts/:formId/:questionId', verifyToken, async (req, res) => {
   try {
     const { formId, questionId } = req.params;
     const { startDate, endDate } = req.query;
@@ -78,14 +79,12 @@ router.get('/charts/:formId/:questionId', async (req, res) => {
     }
 
     const [rows] = await db.query(sql, params);
-    console.log("📥 Raw Rows from DB (First Row):", rows[0]);
     // ✅ รวมคำตอบต่อ 1 คนก่อน
     const grouped = {};
 
     rows.forEach(r => {
         // ตรวจสอบว่า summary_data มีค่ามาจริงไหม
       if (!grouped[r.response_id]) {
-        console.log(`👤 Response ID: ${r.response_id} | Summary Data:`, r.summary_data ? "Has Data" : "EMPTY");
         // 🟢 จุดที่ 1: ถอดรหัส summary_data ก่อนเก็บลงใน Object
         let decryptedSummary = r.summary_data;
         if (typeof decryptedSummary === 'string' && decryptedSummary !== "") {
@@ -149,7 +148,7 @@ router.get('/charts/:formId/:questionId', async (req, res) => {
 // ==========================================
 // 6. สรุปสถิติสำหรับ Dashboard (รวมของคลินิก STI)
 // ==========================================
-router.get('/admin/master-cases/stats', async (req, res) => {
+router.get('/admin/master-cases/stats', verifyToken, async (req, res) => {
     try {
         const { clinic, form_id } = req.query;
         
@@ -285,7 +284,7 @@ router.get('/admin/master-cases/stats', async (req, res) => {
         res.json(stats);
     } catch (error) {
         console.error("Stats API Error:", error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
     }
 });
 
@@ -301,7 +300,7 @@ const decryptIfEncrypted = (text) => {
 };
 
 // 2. ข้อมูลเคสล่าสุด
-router.get('/dashboard/recent', async (req, res) => {
+router.get('/dashboard/recent', verifyToken, async (req, res) => {
     try {
         const { clinic } = req.query; 
         let sql = `

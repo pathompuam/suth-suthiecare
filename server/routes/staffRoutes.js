@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { verifyToken } = require('../middleware/authMiddleware');
 
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT * 
@@ -21,9 +22,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
     const { fullname } = req.body;
+
+    if (!fullname || typeof fullname !== 'string' || fullname.trim() === '' || fullname.length > 255) {
+      return res.status(400).json({ message: 'กรุณาระบุชื่อให้ถูกต้อง' });
+    }
 
     const [result] = await db.query(`
       INSERT INTO staffs(fullname)
@@ -43,7 +48,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
 

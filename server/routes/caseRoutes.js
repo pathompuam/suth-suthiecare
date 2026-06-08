@@ -4,6 +4,7 @@ const router = express.Router();
 const db = require('../config/db');
 // 🟢 นำเข้าระบบเข้ารหัส
 const { encrypt, decrypt, hmacHash } = require('../utils/encryption');
+const { verifyToken } = require('../middleware/authMiddleware');
 const NodeCache = require('node-cache');
 // ตั้งค่าให้จำไว้ 5 นาที (300 วินาที) ข้อมูลพวกนี้เปลี่ยนไม่บ่อย
 const myCache = new NodeCache({ stdTTL: 300 });
@@ -14,7 +15,7 @@ const safeDecrypt = (val) => decrypt(val) || val;
 // ==========================================
 // 1. CASE LOGS
 // ==========================================
-router.get('/cases/:id/logs', async (req, res) => {
+router.get('/cases/:id/logs', verifyToken, async (req, res) => {
   try {
     const { target } = req.query; // 🟢 รับพารามิเตอร์เป้าหมาย
     let sql = "SELECT * FROM case_logs WHERE response_id = ? ORDER BY created_at DESC";
@@ -29,10 +30,16 @@ router.get('/cases/:id/logs', async (req, res) => {
 // ==========================================
 // บันทึกประวัติ (Log) และอัปเดตสถานะเคสล่าสุด
 // ==========================================
-router.post('/cases/:id/logs', async (req, res) => {
-   console.log("BODY =", req.body);
+router.post('/cases/:id/logs', verifyToken, async (req, res) => {
   const caseId = req.params.id; // ไอดีของ form_responses
   const { master_case_id, type, staff, staff_id, detail, status, status_id, risk_level } = req.body;
+
+  if (isNaN(Number(caseId))) {
+    return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+  }
+  if (!type || typeof type !== 'string') {
+    return res.status(400).json({ message: 'กรุณาระบุประเภทของบันทึก' });
+  }
 
   try {
     // 1. บันทึกประวัติลงตาราง case_logs (เหมือนเดิม)
@@ -61,14 +68,14 @@ router.post('/cases/:id/logs', async (req, res) => {
     res.json({ message: "บันทึกประวัติและอัปเดตสถานะสำเร็จ" });
   } catch (err) {
     console.error("Case Log & Update Error:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
   }
 });
 
 // ==========================================
 // 2. DELETE CASE
 // ==========================================
-router.delete('/cases/:id', async (req, res) => {
+router.delete('/cases/:id', verifyToken, async (req, res) => {
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();
@@ -88,9 +95,17 @@ router.delete('/cases/:id', async (req, res) => {
 // ==========================================
 // 3. APPOINTMENTS
 // ==========================================
-router.post('/appointments', async (req, res) => {
+router.post('/appointments', verifyToken, async (req, res) => {
   // 🟢 รับ master_case_id เพิ่มเข้ามา
   const { case_id, master_case_id, service_id, appointment_no, appointment_date, staff, staff_id, note } = req.body;
+
+  if (!appointment_date || isNaN(Date.parse(appointment_date))) {
+    return res.status(400).json({ message: 'กรุณาระบุวันที่นัดหมายให้ถูกต้อง' });
+  }
+  if (case_id !== undefined && case_id !== null && isNaN(Number(case_id))) {
+    return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+  }
+
   try {
     const sql = "INSERT INTO appointments (case_id, master_case_id, service_id, appointment_no, appointment_date, staff, staff_id, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     await db.query(sql, [case_id, master_case_id || null, service_id, appointment_no, appointment_date, staff, staff_id || null, note]);
@@ -100,7 +115,7 @@ router.post('/appointments', async (req, res) => {
 
 // routes/caseRoutes.js
 
-router.get('/appointments', async (req, res) => {
+router.get('/appointments', verifyToken, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
     const offset = parseInt(req.query.offset) || 0;
@@ -130,7 +145,7 @@ router.get('/appointments', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูลนัดหมาย" }); }
 });
 
-router.get('/cases/:id/appointments', async (req, res) => {
+router.get('/cases/:id/appointments', verifyToken, async (req, res) => {
   try {
     const { target } = req.query; // 🟢 รับพารามิเตอร์เป้าหมาย
     let sql = "SELECT * FROM appointments WHERE case_id = ? ORDER BY appointment_date ASC";
@@ -145,7 +160,7 @@ router.get('/cases/:id/appointments', async (req, res) => {
 // ==========================================
 // 4. FORM ANSWERS (🟢 ถอดรหัส)
 // ==========================================
-router.get('/cases/:id/answers', async (req, res) => {
+router.get('/cases/:id/answers', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(`SELECT question_id, question_title, answer_value FROM form_answers WHERE response_id = ? ORDER BY id ASC`, [req.params.id]);
     const result = rows.map(r => {
@@ -166,7 +181,7 @@ router.get('/cases/:id/answers', async (req, res) => {
 // ==========================================
 // 5. EDIT RESPONSE (🟢 เข้ารหัสตอนเซฟ)
 // ==========================================
-router.patch('/history/response/:id', async (req, res) => {
+router.patch('/history/response/:id', verifyToken, async (req, res) => {
   try {
     const { field, value } = req.body;
     const ALLOWED = ['display_name', 'phone', 'weight', 'height'];
@@ -194,13 +209,13 @@ router.patch('/history/response/:id', async (req, res) => {
 
     await db.query("UPDATE form_responses SET summary_data = ? WHERE id = ?", [JSON.stringify(summary), req.params.id]);
     res.json({ message: "อัปเดตสำเร็จ", updated_at: now });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error("Edit response Error:", err); res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" }); }
 });
 
 // ==========================================
 // 6. EDIT ANSWER (🟢 เข้ารหัสตอนเซฟ)
 // ==========================================
-router.patch('/history/answer/:responseId/:questionId', async (req, res) => {
+router.patch('/history/answer/:responseId/:questionId', verifyToken, async (req, res) => {
   try {
     const { responseId, questionId } = req.params;
     const { value } = req.body;
@@ -223,13 +238,13 @@ router.patch('/history/answer/:responseId/:questionId', async (req, res) => {
       await db.query(`UPDATE form_answers SET answer_value = ? WHERE response_id = ? AND question_title = ?`, [JSON.stringify(valToSave), responseId, questionId]);
     }
     res.json({ message: "อัปเดตสำเร็จ", updated_at: new Date().toISOString() });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { console.error("Edit answer Error:", err); res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" }); }
 });
 
 // ==========================================
 // 7. HISTORY SEARCH (🟢 ค้นหาด้วย Hash และถอดรหัสก่อนโชว์หน้า HistoryResult)
 // ==========================================
-router.get('/history/:identity', async (req, res) => {
+router.get('/history/:identity', verifyToken, async (req, res) => {
   try {
     const identity = (req.params.identity || '').replace(/\D/g, '');
     if (!identity) return res.status(400).json({ message: "เลขบัตรไม่ถูกต้อง" });
@@ -304,7 +319,7 @@ router.get('/history/:identity', async (req, res) => {
 // ==========================================
 // 3.5 SERVICES
 // ==========================================
-router.get('/services', async (req, res) => {
+router.get('/services', verifyToken, async (req, res) => {
   try {
     // 🟢 1. เช็คว่ามีใน Cache ไหม ถ้ามีให้ส่งกลับทันที (ไม่กวน DB)
     if (myCache.has('services')) {
@@ -320,7 +335,7 @@ router.get('/services', async (req, res) => {
   catch (err) { res.status(500).json({ message: "Error" }); }
 });
 
-router.post('/services', async (req, res) => {
+router.post('/services', verifyToken, async (req, res) => {
   try {
     const { name } = req.body;
     const [result] = await db.query("INSERT INTO service_types (name, color) VALUES (?, '#2d7d81')", [name]);
@@ -329,12 +344,12 @@ router.post('/services', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Error" }); }
 });
 
-router.put('/services/:id', async (req, res) => {
+router.put('/services/:id', verifyToken, async (req, res) => {
   try { await db.query("UPDATE service_types SET name = ? WHERE id = ?", [req.body.name, req.params.id]); myCache.del('services'); res.json({ message: "Updated" }); }
   catch (err) { res.status(500).json({ message: "Error" }); }
 });
 
-router.delete('/services/:id', async (req, res) => {
+router.delete('/services/:id', verifyToken, async (req, res) => {
   try { await db.query("DELETE FROM service_types WHERE id = ?", [req.params.id]); myCache.del('services'); res.json({ message: "Deleted" }); }
   catch (err) { res.status(500).json({ message: "Error" }); }
 });
@@ -390,8 +405,8 @@ const getStatusesHandler = async (req, res) => {
     myCache.set(cacheKey, rows);
     res.json(rows);
   } catch (err) {
-    console.error("GET Statuses Error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("GET Statuses Error:", err);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
   }
 };
 
@@ -408,8 +423,8 @@ const createStatusHandler = async (req, res) => {
     );
     res.json({ id: result.insertId, name, color: targetColor, clinic_type: targetClinic, is_active: 1 });
   } catch (err) {
-    console.error("POST Status Error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("POST Status Error:", err);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
   }
 };
 
@@ -418,25 +433,26 @@ const deactivateStatusHandler = async (req, res) => {
     await db.query('UPDATE case_statuses SET is_active = 0 WHERE id = ?', [req.params.id]);
     res.json({ message: 'Status deactivated' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Deactivate Status Error:", err);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
   }
 };
 
 // 🟢 ผูก Route ทั้งชื่อเก่าและชื่อใหม่เข้าด้วยกัน (Frontend เรียกอันไหนก็ทำงานได้ 100%)
-router.get('/case-statuses/active', getStatusesHandler);
-router.get('/status-options', getStatusesHandler);
+router.get('/case-statuses/active', verifyToken, getStatusesHandler);
+router.get('/status-options', verifyToken, getStatusesHandler);
 
-router.post('/case-statuses', createStatusHandler);
-router.post('/status-options', createStatusHandler);
+router.post('/case-statuses', verifyToken, createStatusHandler);
+router.post('/status-options', verifyToken, createStatusHandler);
 
-router.put('/case-statuses/:id/deactivate', deactivateStatusHandler);
-router.put('/status-options/:id/deactivate', deactivateStatusHandler);
+router.put('/case-statuses/:id/deactivate', verifyToken, deactivateStatusHandler);
+router.put('/status-options/:id/deactivate', verifyToken, deactivateStatusHandler);
 
 
 // ==========================================
 // 8. NOTE TEMPLATES (ระบบชุดคำถามล่วงหน้า)
 // ==========================================
-router.get('/templates', async (req, res) => {
+router.get('/templates', verifyToken, async (req, res) => {
   const { clinic_type } = req.query;
   try {
     let sql = "SELECT * FROM note_templates";
@@ -456,7 +472,7 @@ router.get('/templates', async (req, res) => {
   }
 });
 
-router.post('/templates', async (req, res) => {
+router.post('/templates', verifyToken, async (req, res) => {
   const { clinic_type, label, text } = req.body;
   if (!clinic_type || !label || !text) {
     return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
@@ -473,7 +489,7 @@ router.post('/templates', async (req, res) => {
   }
 });
 
-router.put('/templates/:id', async (req, res) => {
+router.put('/templates/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   const { label, text } = req.body;
   try {
@@ -488,7 +504,7 @@ router.put('/templates/:id', async (req, res) => {
   }
 });
 
-router.delete('/templates/:id', async (req, res) => {
+router.delete('/templates/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     await db.query("DELETE FROM note_templates WHERE id = ?", [id]);
@@ -502,7 +518,7 @@ router.delete('/templates/:id', async (req, res) => {
 // ==========================================
 // 9. MASTER CASES (ระบบการจัดการแผนการรักษา)
 // ==========================================
-router.get('/master-cases/:identity', async (req, res) => {
+router.get('/master-cases/:identity', verifyToken, async (req, res) => {
   try {
     const identity = (req.params.identity || '').replace(/\D/g, '');
     if (!identity) return res.status(400).json({ message: "เลขบัตรไม่ถูกต้อง" });
@@ -561,7 +577,7 @@ router.get('/master-cases/:identity', async (req, res) => {
   }
 });
 
-router.get('/master-cases/by-id/:id', async (req, res) => {
+router.get('/master-cases/by-id/:id', verifyToken, async (req, res) => {
   try {
     const masterCaseId = req.params.id;
 
@@ -618,7 +634,7 @@ router.get('/master-cases/by-id/:id', async (req, res) => {
 // ==========================================
 // 🎯 API 10: Secure URL Tokens (เข้ารหัสลิงก์ส่งให้คนไข้เพื่อป้องกันข้อมูลหลุด)
 // ==========================================
-router.post('/generate-token', (req, res) => {
+router.post('/generate-token', verifyToken, (req, res) => {
   try {
     const { identity } = req.body;
     if (!identity) return res.status(400).json({ error: "Missing identity" });
@@ -643,7 +659,7 @@ router.post('/decode-token', (req, res) => {
 });
 
 // 🟢 API สำหรับปิดเคส (Close Master Case)
-router.put('/master-cases/:id/close', async (req, res) => {
+router.put('/master-cases/:id/close', verifyToken, async (req, res) => {
   try {
     const masterCaseId = req.params.id;
     const { staff } = req.body; // รับชื่อเจ้าหน้าที่ (เผื่อต้องการบันทึกลง Log หรือ Column อื่นในอนาคต)
@@ -670,7 +686,7 @@ router.put('/master-cases/:id/close', async (req, res) => {
 // ==========================================
 // 🎯 API 3: บันทึกข้อมูลทางคลินิก (ผลเลือด, PrEP)
 // ==========================================
-router.put('/master-cases/:id/clinical-data', async (req, res) => {
+router.put('/master-cases/:id/clinical-data', verifyToken, async (req, res) => {
   try {
     const { clinical_data } = req.body; // เป็น Object เช่น { blood_test: 'negative', prep: 'prep_with_blood' }
     await db.query(
@@ -679,12 +695,13 @@ router.put('/master-cases/:id/clinical-data', async (req, res) => {
     );
     res.json({ message: "บันทึกข้อมูลทางคลินิกสำเร็จ" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Update clinical-data Error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
   }
 });
 
 // 🟢 1. API ใหม่สำหรับอัปเดตสถานะนัดหมาย (Quick Action: เช็คอิน/ยกเลิก)
-router.patch('/appointments/:id/status', async (req, res) => {
+router.patch('/appointments/:id/status', verifyToken, async (req, res) => {
   try {
     const { status } = req.body;
     await db.query(
@@ -699,7 +716,7 @@ router.patch('/appointments/:id/status', async (req, res) => {
 });
 
 // 🟢 2. แก้ไข API ปิดเคสเดิม ให้มียกเลิกนัดค้างอยู่อัตโนมัติ
-router.put('/master-cases/:id/close', async (req, res) => {
+router.put('/master-cases/:id/close', verifyToken, async (req, res) => {
   try {
     const masterCaseId = req.params.id;
     const { staff } = req.body;
@@ -732,10 +749,20 @@ router.put('/master-cases/:id/close', async (req, res) => {
 // ==========================================
 // CREATE WALK-IN CASE
 // ==========================================
-router.post('/cases', async (req, res) => {
+router.post('/cases', verifyToken, async (req, res) => {
   try {
 
     const data = req.body;
+
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    if (data.identity_value !== undefined && typeof data.identity_value !== 'string') {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    if (data.summary_data !== undefined && typeof data.summary_data !== 'object') {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
 
     const rawIdentity = data.identity_value || '';
     let encryptedIdentity = '';
@@ -817,7 +844,7 @@ router.post('/cases', async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: err.message
+      message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์"
     });
   }
 });
@@ -825,7 +852,7 @@ router.post('/cases', async (req, res) => {
 // ==========================================
 // WALK-IN CASE ถอดรหัส
 // ==========================================
-router.get('/forms/:id/responses-v2', async (req, res) => {
+router.get('/forms/:id/responses-v2', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const [responseData] = await db.query(
@@ -870,7 +897,7 @@ router.get('/forms/:id/responses-v2', async (req, res) => {
   }
 });
 
-router.get('/cases/:id', async (req, res) => {
+router.get('/cases/:id', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query("SELECT * FROM form_responses WHERE id = ?", [req.params.id]);
     if (rows.length === 0) return res.status(404).json({ message: "Case not found" });
@@ -897,7 +924,7 @@ router.get('/cases/:id', async (req, res) => {
   }
 });
 
-router.get('/all-cases', async (req, res) => {
+router.get('/all-cases', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT r.*, f.title as form_title, m.status_name 

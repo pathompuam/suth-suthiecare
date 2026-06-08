@@ -100,15 +100,15 @@ export default function SystemEvaluationWidget() {
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', minWidth: 0 }}>
         
         {/* 🟢 คอลัมน์ที่ 1: กราฟแท่ง Likert */}
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#334155', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <FiBarChart2 color="#8b5cf6" /> ความพึงพอใจ 5 ด้าน
           </h3>
-          <div style={{ width: '100%', height: '240px', marginTop: '10px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ width: '100%', minWidth: 0, height: '240px', marginTop: '10px' }}>
+            <ResponsiveContainer width="100%" height={240}>
               <BarChart data={likertData} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                 <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -125,7 +125,7 @@ export default function SystemEvaluationWidget() {
         </div>
 
         {/* 🟢 คอลัมน์ที่ 2: คะแนน SUS และ กราฟใยแมงมุม */}
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', minWidth: 0 }}>
           <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#334155', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px', alignSelf: 'flex-start' }}>
             <FiActivity color={getSusColor(stats.avg_sus)} /> ความสามารถในการใช้งาน (SUS)
           </h3>
@@ -134,8 +134,8 @@ export default function SystemEvaluationWidget() {
               {Number(stats.avg_sus).toFixed(1)} <span style={{ fontSize: '14px', color: '#94a3b8' }}>/ 100</span>
             </div>
           </div>
-          <div style={{ width: '100%', height: '220px', marginTop: '-15px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div style={{ width: '100%', minWidth: 0, height: '220px', marginTop: '-15px' }}>
+            <ResponsiveContainer width="100%" height={220}>
               <RadarChart cx="50%" cy="50%" outerRadius="60%" data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }} />

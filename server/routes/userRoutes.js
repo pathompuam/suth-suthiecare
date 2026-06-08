@@ -97,6 +97,18 @@ router.post('/users', verifyToken, verifyAdmin, async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({ message: 'กรุณากรอก username และ password' });
     }
+    if (typeof username !== 'string' || username.trim().length < 3 || username.length > 100) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    if (typeof password !== 'string' || password.length < 8 || password.length > 200) {
+      return res.status(400).json({ message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' });
+    }
+    if (role_id !== undefined && role_id !== null && isNaN(Number(role_id))) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    if (status && !['active', 'inactive', 'suspended'].includes(status)) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 12);
     const encName = name ? encrypt(name) : null;
@@ -126,7 +138,7 @@ router.post('/users', verifyToken, verifyAdmin, async (req, res) => {
     }
 
     // ถ้าเป็น Error อื่นๆ ก็ปล่อยไปตามปกติ
-    res.status(500).json({ message: err.message }); 
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์' });
   }
 });
 
@@ -136,7 +148,23 @@ router.post('/users', verifyToken, verifyAdmin, async (req, res) => {
 // ============================================================
 router.put('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
+    if (isNaN(Number(req.params.id))) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
     const { username, name, email, role_id, status, password } = req.body;
+
+    if (!username || typeof username !== 'string' || username.trim().length < 3 || username.length > 100) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    if (role_id !== undefined && role_id !== null && isNaN(Number(role_id))) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    if (status && !['active', 'inactive', 'suspended'].includes(status)) {
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    if (password && (typeof password !== 'string' || password.length < 8 || password.length > 200)) {
+      return res.status(400).json({ message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' });
+    }
 
     // ✅ Encrypt เฉพาะตอนมีค่า
     const encName = name ? encrypt(name) : null;
@@ -168,7 +196,7 @@ router.put('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
 
   } catch (err) {
     console.error('Error updating user:', err);
-    res.status(500).json({ message: err.message }); // 🔥 ให้เห็น error จริง
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์' });
   }
 });
 
