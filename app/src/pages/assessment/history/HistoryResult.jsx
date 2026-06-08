@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './HistoryResult.css';
 import Navbar from '../../../components/Navbar';
 
@@ -20,10 +21,52 @@ import {
 
 import { FaChartBar } from 'react-icons/fa';
 
+import { translateTextSmart } from '../../../utils/translator';
+import LanguageSwitcher from '../../../components/LanguageSwitcher.jsx';
+
 import { CLINIC_INFO, stripHtml, formatDate, getRiskInfo, formatAnswerValue } from './historyUtils';
 import { HeroEditableField, MaskedIdField, EditableAnswerField, EditableField, Toast } from './components/HistoryWidgets';
 
+const getClinicName = (cInfo, lang) => {
+  if (lang === 'en') {
+    const map = {
+      'teenager': 'Teen Clinic',
+      'sti': 'STI Clinic',
+      'behavior': 'Behavioral Clinic',
+      'general': 'General Clinic'
+    };
+    return map[cInfo.id] || cInfo.text;
+  }
+  return cInfo.text;
+};
+
+const getRiskLabel = (label, lang) => {
+  if (lang !== 'en' || !label) return label;
+  if (label.includes('สูงมาก')) return 'Very High Risk';
+  if (label.includes('สูง')) return 'High Risk';
+  if (label.includes('ปานกลาง')) return 'Moderate Risk';
+  if (label.includes('ต่ำ')) return 'Low Risk';
+  if (label.includes('ปกติ') || label.includes('ไม่มี')) return 'Normal';
+  return label;
+};
+
+const getFormatDate = (dateString, lang) => {
+  if (lang === 'en') {
+    return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  return formatDate(dateString);
+};
+
+const translateStatus = (status, lang) => {
+  if (lang !== 'en' || !status) return status;
+  if (status.includes("รอติดต่อ")) return "Pending Contact";
+  if (status.includes("กำลังดำเนินการ")) return "In Progress";
+  if (status.includes("เสร็จสิ้น")) return "Completed";
+  return status;
+};
+
 const ExpandableText = ({ text, color }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   let formattedText = text || "";
   if (typeof formattedText === 'string') {
@@ -77,9 +120,9 @@ const ExpandableText = ({ text, color }) => {
           onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
         >
           {isExpanded ? (
-            <>ย่อข้อความ <FiChevronUp size={18} /></>
+            <>{t('history.result.read_less')} <FiChevronUp size={18} /></>
           ) : (
-            <>อ่านเพิ่มเติม <FiChevronDown size={18} /></>
+            <>{t('history.result.read_more')} <FiChevronDown size={18} /></>
           )}
         </button>
       )}
@@ -88,6 +131,7 @@ const ExpandableText = ({ text, color }) => {
 };
 
 export default function HistoryResult() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { identity, records } = location.state || {};
@@ -105,6 +149,149 @@ export default function HistoryResult() {
   const [formQuestionsMap, setFormQuestionsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [caseLogs, setCaseLogs] = useState([]);
+
+  const [translatedData, setTranslatedData] = useState([]);
+  const [translatedLogs, setTranslatedLogs] = useState([]);
+  const [translatedAnswers, setTranslatedAnswers] = useState({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const translateAll = async () => {
+      if (i18n.language !== 'en') {
+        if (isMounted) {
+          setTranslatedData(data);
+          setTranslatedLogs(caseLogs);
+          setTranslatedAnswers(formAnswers);
+        }
+        return;
+      }
+
+      const tData = await Promise.all(data.map(async (d) => {
+        const dCopy = { ...d };
+        if (dCopy.form_title) dCopy.form_title = await translateTextSmart(dCopy.form_title);
+        if (dCopy.summary_data) {
+          const sd = { ...dCopy.summary_data };
+          if (sd.score_results) {
+            sd.score_results = await Promise.all(sd.score_results.map(async (s) => {
+              const sCopy = { ...s };
+              if (sCopy.title) sCopy.title = await translateTextSmart(sCopy.title);
+              if (sCopy.label) sCopy.label = await translateTextSmart(sCopy.label);
+              if (sCopy.advice) sCopy.advice = await translateTextSmart(sCopy.advice);
+              return sCopy;
+            }));
+          }
+          if (sd.raw_answers) {
+             const tRaw = {};
+             for (const [k, v] of Object.entries(sd.raw_answers)) {
+                const tK = await translateTextSmart(k);
+                tRaw[tK] = v;
+             }
+             sd.raw_answers = tRaw;
+          }
+          dCopy.summary_data = sd;
+        }
+        return dCopy;
+      }));
+
+      const tLogs = await Promise.all(caseLogs.map(async (log) => {
+        const logCopy = { ...log };
+        if (logCopy.detail) logCopy.detail = await translateTextSmart(logCopy.detail);
+        return logCopy;
+      }));
+
+      const tAnswers = {};
+      for (const [idStr, answers] of Object.entries(formAnswers)) {
+        if (Array.isArray(answers)) {
+           const record = data.find(d => String(d.id) === String(idStr));
+           const formQs = record ? (formQuestionsMap[record.form_id] || []) : [];
+           
+           const flatFormQs = [];
+           formQs.forEach(q => {
+             if (q.type === 'group' && q.subQuestions) flatFormQs.push(...q.subQuestions);
+             else flatFormQs.push(q);
+           });
+
+           tAnswers[idStr] = await Promise.all(answers.map(async (ans) => {
+             const ansCopy = { ...ans };
+             const qLabel = stripHtml(ans.question_title || '');
+             const qDef = flatFormQs.find(q => stripHtml(q.title) === qLabel || stripHtml(q.title) === stripHtml(ansCopy.question_title));
+
+             if (ansCopy.question_title) ansCopy.question_title = await translateTextSmart(ansCopy.question_title);
+
+             if (ansCopy.answer_value !== undefined && ansCopy.answer_value !== null) {
+                let isGrid = false;
+                if (qDef && (qDef.type === 'grid_multiple' || qDef.type === 'grid_checkbox')) isGrid = true;
+                else if (typeof ansCopy.answer_value === 'object' && !Array.isArray(ansCopy.answer_value)) isGrid = true;
+
+                if (isGrid) {
+                   const tGrid = {};
+                   for (const [rKey, rVal] of Object.entries(ansCopy.answer_value)) {
+                      let rowTitle = rKey;
+                      const match = String(rKey).match(/^(?:แถวที่|Row)\s*(\d+)$/i);
+                      let rIdx = -1;
+                      if (match) rIdx = parseInt(match[1], 10) - 1;
+                      else if (!isNaN(rKey)) rIdx = parseInt(rKey, 10);
+
+                      if (rIdx >= 0 && qDef && qDef.rows && qDef.rows[rIdx]) {
+                          const stripped = stripHtml(qDef.rows[rIdx]);
+                          if (stripped) rowTitle = stripped;
+                      }
+
+                      let tRKey = rowTitle;
+                      if (typeof rowTitle === 'string' && rowTitle.trim() !== '') {
+                          if (rowTitle.match(/^(?:แถวที่|Row)\s*(\d+)$/i)) {
+                              tRKey = `Row ${rowTitle.match(/(\d+)/)[1]}`;
+                          } else {
+                              tRKey = await translateTextSmart(rowTitle);
+                          }
+                      } else if (rIdx >= 0) {
+                          tRKey = `Row ${rIdx + 1}`;
+                      }
+
+                      let tRVal = rVal;
+                      if (typeof rVal === 'string') tRVal = await translateTextSmart(rVal);
+                      else if (Array.isArray(rVal)) tRVal = await Promise.all(rVal.map(async v => typeof v === 'string' ? await translateTextSmart(v) : v));
+                      tGrid[tRKey] = tRVal;
+                   }
+                   ansCopy.answer_value = tGrid;
+                } else if (qDef) {
+                   const choiceTypes = ['multiple_choice', 'checkboxes', 'dropdown', 'radio', 'linear_scale'];
+                   if (choiceTypes.includes(qDef.type)) {
+                      if (Array.isArray(ansCopy.answer_value)) {
+                         ansCopy.answer_value = await Promise.all(ansCopy.answer_value.map(async v => {
+                            if (typeof v === 'string' && v.includes(' : ')) {
+                               const parts = v.split(' : ');
+                               return `${await translateTextSmart(parts[0])} : ${parts[1]}`;
+                            }
+                            return typeof v === 'string' ? await translateTextSmart(v) : v;
+                         }));
+                      } else if (typeof ansCopy.answer_value === 'string') {
+                         if (ansCopy.answer_value.includes(' : ')) {
+                            const parts = ansCopy.answer_value.split(' : ');
+                            ansCopy.answer_value = `${await translateTextSmart(parts[0])} : ${parts[1]}`;
+                         } else {
+                            ansCopy.answer_value = await translateTextSmart(ansCopy.answer_value);
+                         }
+                      }
+                   }
+                }
+             }
+             return ansCopy;
+           }));
+        } else {
+           tAnswers[idStr] = answers;
+        }
+      }
+
+      if (isMounted) {
+        setTranslatedData(tData);
+        setTranslatedLogs(tLogs);
+        setTranslatedAnswers(tAnswers);
+      }
+    };
+    translateAll();
+    return () => { isMounted = false; };
+  }, [data, caseLogs, formAnswers, i18n.language]);
 
   const [adviceModal, setAdviceModal] = useState({ isOpen: false, logs: [], clinicInfo: null });
   const [timelineFilter, setTimelineFilter] = useState('all');
@@ -170,7 +357,7 @@ export default function HistoryResult() {
       const res = await updateHistoryResponse(targetId, { field, value });
       handleFieldSave(targetId, field, value, res.data?.updated_at);
     } catch (err) {
-      alert(`บันทึกไม่สำเร็จ: ${err?.response?.data?.message || err?.message}`);
+      alert(`${t('history.result.save_error')} ${err?.response?.data?.message || err?.message}`);
     }
   };
 
@@ -182,7 +369,7 @@ export default function HistoryResult() {
       sd[`${field}_updated_at`] = updatedAt;
       return { ...item, summary_data: sd };
     }));
-    showToast('บันทึกสำเร็จ ✓', 'success');
+    showToast(t('history.result.save_success'), 'success');
   };
 
   const loadAnswers = async (record) => {
@@ -230,25 +417,25 @@ export default function HistoryResult() {
           <div className="hr-spinner-ring"></div>
         </div>
         <div className="hr-loading-content">
-          <h3 className="hr-loading-text">กำลังโหลด</h3>
+          <h3 className="hr-loading-text">{t('history.result.loading')}</h3>
         </div>
       </div>
     </div>
   );
 
 
-  const allNames = [...new Set(data.map(d => stripHtml(d.summary_data?.display_name)).filter(n => n && n !== '-'))];
-  const allPhones = [...new Set(data.map(d => stripHtml(d.summary_data?.phone || d.summary_data?.raw_answers?.['เบอร์โทรศัพท์'] || d.summary_data?.display_phone)).filter(p => p && p !== '-'))];
+  const allNames = [...new Set(translatedData.map(d => stripHtml(d.summary_data?.display_name)).filter(n => n && n !== '-'))];
+  const allPhones = [...new Set(translatedData.map(d => stripHtml(d.summary_data?.phone || d.summary_data?.raw_answers?.['เบอร์โทรศัพท์'] || d.summary_data?.display_phone)).filter(p => p && p !== '-'))];
 
   const latestName = allNames[0] || '-';
   const pastNames = allNames.slice(1);
   const latestPhone = allPhones[0] || '-';
   const pastPhones = allPhones.slice(1);
 
-  const visitedClinics = [...new Set(data.map(d => d.clinicType || d.clinic_type || 'general'))];
+  const visitedClinics = [...new Set(translatedData.map(d => d.clinicType || d.clinic_type || 'general'))];
 
   // 🟢 ปรับปรุงลอจิกการดึงข้อมูล BMI ให้สแกนหาจากคำตอบโดยตรงอย่างชาญฉลาด
-  const bmiRecords = data.map(d => {
+  const bmiRecords = translatedData.map(d => {
     const sd = d.summary_data || {};
     const rawAnswers = sd.raw_answers || {};
     const score = sd.score_results?.find(s => s.title?.toLowerCase().includes('bmi') || s.title?.includes('ดัชนีมวลกาย'));
@@ -287,7 +474,7 @@ export default function HistoryResult() {
 
       return {
         date: d.submitted_at, score: score.score, label: score.label, color: score.color,
-        clinicColor: cInfo.color, clinicName: cInfo.text,
+        clinicColor: cInfo.color, clinicName: cInfo.text, clinicId: cInfo.id,
         weight: weightVal,
         height: heightVal
       };
@@ -295,7 +482,7 @@ export default function HistoryResult() {
     return null;
   }).filter(Boolean).slice(0, 5).reverse();
 
-  const adviceLogs = caseLogs.filter(l => l.type === 'note');
+  const adviceLogs = translatedLogs.filter(l => l.type === 'note');
   const adviceByClinic = { teenager: [], behavior: [], sti: [], general: [] };
   adviceLogs.forEach(log => {
     const clinic = log.clinicType || log.clinic_type || 'general';
@@ -303,7 +490,7 @@ export default function HistoryResult() {
   });
 
   const timelineEvents = [
-    ...data.map(d => ({
+    ...translatedData.map(d => ({
       type: 'form',
       date: new Date(d.submitted_at),
       data: d,
@@ -318,7 +505,11 @@ export default function HistoryResult() {
     <div className="hr-page">
       {toast && <Toast msg={toast.msg} type={toast.type} />}
 
-      <Navbar showBack={true} backText="กลับค้นหา" onBack={() => navigate('/history')} />
+      <div style={{ position: 'fixed', top: '70px', right: '15px', zIndex: 1000 }}>
+        <LanguageSwitcher darkText={true} />
+      </div>
+
+      <Navbar showBack={true} backText={t('history.result.back')} onBack={() => navigate('/history')} />
 
       <div className="hr-layout">
 
@@ -333,7 +524,7 @@ export default function HistoryResult() {
                 {pastNames.length > 0 && (
                   <div className="hr-info-icon-wrapper" style={{ marginTop: 6 }}>
                     <FiInfo size={16} />
-                    <div className="hr-tooltip"><strong>เคยบันทึกชื่ออื่น:</strong><br />{pastNames.join(', ')}</div>
+                    <div className="hr-tooltip"><strong>{t('history.result.other_names')}</strong><br />{pastNames.join(', ')}</div>
                   </div>
                 )}
               </div>
@@ -352,7 +543,7 @@ export default function HistoryResult() {
                   {pastPhones.length > 0 && (
                     <div className="hr-info-icon-wrapper" style={{ marginLeft: 4 }}>
                       <FiInfo size={14} color="rgba(255,255,255,0.7)" />
-                      <div className="hr-tooltip"><strong>เบอร์โทรอื่นในระบบ:</strong><br />{pastPhones.join(', ')}</div>
+                      <div className="hr-tooltip"><strong>{t('history.result.other_phones')}</strong><br />{pastPhones.join(', ')}</div>
                     </div>
                   )}
                 </div>
@@ -365,7 +556,7 @@ export default function HistoryResult() {
                     <span key={clinic.id} className="hr-badge-clinic"
                       style={isVisited ? { backgroundColor: clinic.bg, color: clinic.color, border: `1px solid ${clinic.border}` }
                         : { backgroundColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', border: '1px dashed rgba(255,255,255,0.3)' }}>
-                      {isVisited ? '✓ ' : ''}{clinic.text}
+                      {isVisited ? '✓ ' : ''}{getClinicName(clinic, i18n.language)}
                     </span>
                   );
                 })}
@@ -375,19 +566,19 @@ export default function HistoryResult() {
             <div className="hr-hero-actions" ref={reentryRef}>
               <div className="hr-reentry-wrapper">
                 <button className="hr-btn-new-assess" onClick={() => setShowNewAssessMenu(!showNewAssessMenu)}>
-                  <FiPlusCircle size={16} /> เริ่มการประเมินใหม่ ▾
+                  <FiPlusCircle size={16} /> {t('history.result.new_assess')}
                 </button>
                 {showNewAssessMenu && (
                   <div className="hr-reentry-menu">
-                    <div className="hr-reentry-header">เลือกแผนกเพื่อเข้ารับการประเมิน</div>
+                    <div className="hr-reentry-header">{t('history.result.select_clinic')}</div>
                     {Object.values(CLINIC_INFO).filter(c => c.id !== 'general').map(c => (
                       <button key={c.id} className="hr-reentry-item" onClick={() => navigate('/', { state: { targetClinic: c.id, prefillIdentity: identity } })}>
                         <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: c.color, marginRight: 10 }}></div>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-800)' }}>{c.text}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-800)' }}>{getClinicName(c, i18n.language)}</span>
                       </button>
                     ))}
                     <button className="hr-reentry-item" onClick={() => navigate('/')} style={{ borderTop: '1px solid var(--gray-100)' }}>
-                      <span style={{ fontSize: 13, color: 'var(--gray-500)', paddingLeft: 22 }}>ดูแบบฟอร์มทั้งหมด</span>
+                      <span style={{ fontSize: 13, color: 'var(--gray-500)', paddingLeft: 22 }}>{t('history.result.view_all_forms')}</span>
                     </button>
                   </div>
                 )}
@@ -399,7 +590,7 @@ export default function HistoryResult() {
         {activeCases.length > 0 && (
           <div className="hr-active-cases-grid">
             {activeCases.map(mc => {
-              const relatedResponse = data.find(d => d.master_case_id === mc.id);
+              const relatedResponse = translatedData.find(d => d.master_case_id === mc.id);
               const actualClinicType = mc.clinicType || mc.clinic_type || relatedResponse?.clinicType || relatedResponse?.clinic_type || 'general';
               const cInfo = CLINIC_INFO[actualClinicType] || CLINIC_INFO.general;
 
@@ -412,9 +603,9 @@ export default function HistoryResult() {
                       <FiAlertCircle size={22} color={cInfo.color} />
                     </div>
                     <div>
-                      <h3 className="hr-active-case-title">การรักษาปัจจุบัน: {cInfo.text}</h3>
+                      <h3 className="hr-active-case-title">{t('history.result.current_treatment')} {getClinicName(cInfo, i18n.language)}</h3>
                       <p className="hr-active-case-status">
-                        สถานะ: <strong>{currentStatus}</strong>
+                        {t('history.result.status')} <strong>{translateStatus(currentStatus, i18n.language)}</strong>
                         <span className="hr-active-case-id">(MC-{String(mc.id).padStart(4, '0')})</span>
                       </p>
                     </div>
@@ -436,9 +627,9 @@ export default function HistoryResult() {
                 <div className="hr-widget-header">
                   <div className="hr-widget-title">
                     <FiActivity size={18} color="var(--theme-orange-500)" />
-                    <h3>แนวโน้มสุขภาพ (BMI)</h3>
+                    <h3>{t('history.result.health_trend')}</h3>
                   </div>
-                  <span className="hr-widget-subtitle">จากทุกคลินิก</span>
+                  <span className="hr-widget-subtitle">{t('history.result.from_all_clinics')}</span>
                 </div>
                 <div className="hr-widget-body">
                   <div className="hr-trend-chart">
@@ -462,7 +653,7 @@ export default function HistoryResult() {
                             <span style={{ display: 'block', color: '#94a3b8' }}>{displayHeight && displayHeight !== '-' ? `${displayHeight} cm` : '-'}</span>
                           </div>
 
-                          <div className="hr-trend-clinic-dot" style={{ backgroundColor: b.clinicColor, marginTop: '4px' }} title={b.clinicName}></div>
+                          <div className="hr-trend-clinic-dot" style={{ backgroundColor: b.clinicColor, marginTop: '4px' }} title={getClinicName({ id: b.clinicId || 'general', text: b.clinicName }, i18n.language)}></div>
                         </div>
                       )
                     })}
@@ -476,7 +667,7 @@ export default function HistoryResult() {
                 <div className="hr-widget-header">
                   <div className="hr-widget-title">
                     <FiMessageSquare size={18} color="var(--theme-green-700)" />
-                    <h3>คำแนะนำจากผู้เชี่ยวชาญ</h3>
+                    <h3>{t('history.result.expert_advice')}</h3>
                   </div>
                 </div>
                 <div className="hr-widget-body hr-advice-scroll">
@@ -487,7 +678,7 @@ export default function HistoryResult() {
 
                     return (
                       <div key={clinicId} className="hr-advice-stack-card" style={{ backgroundColor: cInfo.bg, borderColor: cInfo.border }}>
-                        <div className="hr-advice-clinic-name" style={{ color: cInfo.color }}>{cInfo.text}</div>
+                        <div className="hr-advice-clinic-name" style={{ color: cInfo.color }}>{getClinicName(cInfo, i18n.language)}</div>
                         <div className="hr-advice-item" style={{ borderLeftColor: cInfo.color, backgroundColor: 'rgba(255,255,255,0.7)' }}>
                           <ExpandableText text={latestLog.detail} color={cInfo.color} />
                           <div className="hr-advice-meta" style={{ marginTop: '8px' }}>
@@ -496,7 +687,7 @@ export default function HistoryResult() {
                         </div>
 
                         <button className="hr-advice-expand-btn" style={{ color: cInfo.color }} onClick={() => setAdviceModal({ isOpen: true, logs: logs, clinicInfo: cInfo })}>
-                          ดูประวัติคำแนะนำทั้งหมด ({logs.length})
+                          {t('history.result.view_all_advice', { count: logs.length })}
                         </button>
                       </div>
                     );
@@ -513,8 +704,8 @@ export default function HistoryResult() {
           <div className="promo-left">
             <img src="/sutapp/phone.png" alt="SUTH App Phone" className="promo-phone-img" />
             <div className="promo-text-content">
-            <h2>กรุณาดาวน์โหลด <span className="highlight-orange">SUTH App</span></h2>
-            <p className="promo-desc">เพื่อรับการแจ้งเตือนการนัดหมายและติดตามข้อมูลการเข้ารับบริการได้สะดวกยิ่งขึ้น</p>
+            <h2>{t('history.result.download_app_title')} <span className="highlight-orange">SUTH App</span></h2>
+            <p className="promo-desc">{t('history.result.download_app_desc')}</p>
           </div>
           </div>
 
@@ -529,19 +720,19 @@ export default function HistoryResult() {
               </div>
             </div>
             <button className="download-btn" onClick={() => window.open("https://play.google.com/store/apps/details?id=th.go.suth.app", "_blank")}>
-             <FiDownload style={{ marginRight: '8px' }} /> ดาวน์โหลดเลย
+             <FiDownload style={{ marginRight: '8px' }} /> {t('history.result.download_now')}
             </button>
           </div>
         </div>
 
 
         <div className="hr-section-label" style={{ marginTop: 40, marginBottom: 12 }}>
-          <div className="hr-section-dot" /> ประวัติการเข้ารับบริการ (ไทม์ไลน์)
+          <div className="hr-section-dot" /> {t('history.result.service_history')}
         </div>
 
         <div className="hr-timeline-filter">
           <button className={`hr-filter-btn ${timelineFilter === 'all' ? 'active' : ''}`} onClick={() => setTimelineFilter('all')}>
-            ทั้งหมด ({timelineEvents.length})
+            {t('history.result.all', { count: timelineEvents.length })}
           </button>
           {Object.values(CLINIC_INFO).filter(c => visitedClinics.includes(c.id)).map(c => {
             const count = timelineEvents.filter(ev => ev.clinic_type === c.id).length;
@@ -552,7 +743,7 @@ export default function HistoryResult() {
                 style={timelineFilter === c.id ? { backgroundColor: c.color, borderColor: c.color, color: 'white' } : {}}
                 onClick={() => setTimelineFilter(c.id)}
               >
-                {c.text} ({count})
+                {getClinicName(c, i18n.language)} ({count})
               </button>
             );
           })}
@@ -563,7 +754,7 @@ export default function HistoryResult() {
           {filteredTimeline.length === 0 && (
             <div className="hr-empty-state" style={{ padding: '40px 0' }}>
               <FiFileText size={40} color="var(--gray-300)" />
-              <p>ไม่มีประวัติในหมวดหมู่นี้</p>
+              <p>{t('history.result.no_history')}</p>
             </div>
           )}
 
@@ -577,7 +768,7 @@ export default function HistoryResult() {
             const scoreResults = sd.score_results || [];
             const risk = getRiskInfo(scoreResults);
             const isOpen = expanded === record.id;
-            const answers = formAnswers[record.id] || [];
+            const answers = translatedAnswers[record.id] || [];
 
             const rawAnswers = sd.raw_answers || {};
             const rawArr = Object.entries(rawAnswers)
@@ -586,18 +777,31 @@ export default function HistoryResult() {
 
             const allAnswers = Array.isArray(answers) && answers.length > 0 ? answers : rawArr;
 
-            const hasWeight = sd.weight !== undefined || rawAnswers['น้ำหนัก (กก.)'] !== undefined;
-            const hasHeight = sd.height !== undefined || rawAnswers['ส่วนสูง (ซม.)'] !== undefined;
-            const hasPhone = sd.phone !== undefined || rawAnswers['เบอร์โทรศัพท์'] !== undefined;
+            const hasWeight = sd.weight !== undefined || (data.find(d => d.id === record.id)?.summary_data?.raw_answers || {})['น้ำหนัก (กก.)'] !== undefined;
+            const hasHeight = sd.height !== undefined || (data.find(d => d.id === record.id)?.summary_data?.raw_answers || {})['ส่วนสูง (ซม.)'] !== undefined;
+            const hasPhone = sd.phone !== undefined || (data.find(d => d.id === record.id)?.summary_data?.raw_answers || {})['เบอร์โทรศัพท์'] !== undefined;
 
             const formQs = formQuestionsMap[record.form_id] || [];
             const currentTab = activeInnerTab[record.id] || 'answers';
 
+            // Use original answers to determine editable
+            const origAnswers = formAnswers[record.id] || [];
+            const origRawAnswers = data.find(d => d.id === record.id)?.summary_data?.raw_answers || {};
+            const origRawArr = Object.entries(origRawAnswers)
+              .filter(([q]) => !['เลขบัตรประชาชน', 'ชื่อ-นามสกุล', 'น้ำหนัก (กก.)', 'ส่วนสูง (ซม.)', 'เบอร์โทรศัพท์'].includes(q))
+              .map(([q, a]) => ({ question_title: q, answer_value: a }));
+            const origAllAnswers = Array.isArray(origAnswers) && origAnswers.length > 0 ? origAnswers : origRawArr;
+
             // 🟢 หาคำถามที่ถูกตั้งค่าให้อนุญาตให้แก้ได้จาก Form Builder
-            const editableQuestions = allAnswers.filter(ans => {
+            const editableQuestionIds = origAllAnswers.filter(ans => {
               const qLabel = stripHtml(ans.question_title || '');
               const qDef = formQs.find(q => stripHtml(q.title) === qLabel);
               return qDef?.isEditable === true;
+            }).map(ans => ans.question_id || stripHtml(ans.question_title || ''));
+
+            const editableQuestions = allAnswers.filter((ans, i) => {
+               const idOrTitle = ans.question_id || stripHtml((origAllAnswers[i] && origAllAnswers[i].question_title) || '');
+               return editableQuestionIds.includes(idOrTitle);
             });
 
             return (
@@ -610,15 +814,15 @@ export default function HistoryResult() {
                         <div className="hr-card-title">{stripHtml(record.form_title || `ฟอร์ม #${record.form_id}`)}</div>
                         <div className="hr-card-date">
                           <FiClock size={11} />
-                          {formatDate(record.submitted_at)}
+                          {getFormatDate(record.submitted_at, i18n.language)}
                           <span style={{ marginLeft: 8, padding: '2px 6px', background: cInfo.bg, color: cInfo.color, borderRadius: 4, fontSize: 10, fontWeight: 700 }}>
-                            {cInfo.text}
+                            {getClinicName(cInfo, i18n.language)}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="hr-card-right">
-                      <span className="hr-risk-tag" style={{ color: risk.color, background: risk.bg }}>● {risk.label}</span>
+                      <span className="hr-risk-tag" style={{ color: risk.color, background: risk.bg }}>● {getRiskLabel(risk.label, i18n.language)}</span>
                       <span className={`hr-chevron ${isOpen ? 'open' : ''}`}>▾</span>
                     </div>
                   </div>
@@ -639,7 +843,7 @@ export default function HistoryResult() {
                               boxShadow: currentTab === 'scores' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                             }}
                           >
-                            <FaChartBar /> ผลประเมิน
+                            <FaChartBar /> {t('history.result.tab_scores')}
                           </button>
                         )}
                         <button
@@ -651,7 +855,7 @@ export default function HistoryResult() {
                             boxShadow: currentTab === 'answers' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                           }}
                         >
-                          <FiFileText /> คำตอบฟอร์ม
+                          <FiFileText /> {t('history.result.tab_answers')}
                         </button>
                         <button
                           onClick={() => setActiveInnerTab(prev => ({ ...prev, [record.id]: 'editable' }))}
@@ -662,7 +866,7 @@ export default function HistoryResult() {
                             boxShadow: currentTab === 'editable' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                           }}
                         >
-                          <FiUser /> ข้อมูลบุคคล
+                          <FiUser /> {t('history.result.tab_person')}
                         </button>
                       </div>
 
@@ -687,20 +891,22 @@ export default function HistoryResult() {
                         {currentTab === 'editable' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             <div className="hr-fields-grid">
-                              <EditableField responseId={record.id} field="display_name" label="ชื่อ-นามสกุล" value={sd.display_name} updatedAt={sd.display_name_updated_at} icon="user" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />
-                              {hasPhone && <EditableField responseId={record.id} field="phone" label="เบอร์โทรศัพท์" value={sd.phone || rawAnswers['เบอร์โทรศัพท์']} updatedAt={sd.phone_updated_at} type="tel" icon="phone" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />}
-                              {hasWeight && <EditableField responseId={record.id} field="weight" label="น้ำหนัก (กก.)" value={String(sd.weight || rawAnswers['น้ำหนัก (กก.)'] || '')} updatedAt={sd.weight_updated_at} type="number" icon="weight" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />}
-                              {hasHeight && <EditableField responseId={record.id} field="height" label="ส่วนสูง (ซม.)" value={String(sd.height || rawAnswers['ส่วนสูง (ซม.)'] || '')} updatedAt={sd.height_updated_at} type="number" icon="ruler" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />}
+                              <EditableField responseId={record.id} field="display_name" label={t('history.result.field_name')} value={sd.display_name} updatedAt={sd.display_name_updated_at} icon="user" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />
+                              {hasPhone && <EditableField responseId={record.id} field="phone" label={t('history.result.field_phone')} value={sd.phone || rawAnswers['เบอร์โทรศัพท์']} updatedAt={sd.phone_updated_at} type="tel" icon="phone" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />}
+                              {hasWeight && <EditableField responseId={record.id} field="weight" label={t('history.result.field_weight')} value={String(sd.weight || rawAnswers['น้ำหนัก (กก.)'] || '')} updatedAt={sd.weight_updated_at} type="number" icon="weight" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />}
+                              {hasHeight && <EditableField responseId={record.id} field="height" label={t('history.result.field_height')} value={String(sd.height || rawAnswers['ส่วนสูง (ซม.)'] || '')} updatedAt={sd.height_updated_at} type="number" icon="ruler" onSave={(f, v, t) => handleFieldSave(record.id, f, v, t)} />}
                             </div>
 
                             {/* 🟢 แสดงคำตอบที่ถูกตั้งให้แก้ได้ */}
                             {editableQuestions.length > 0 && (
                               <div className="hr-answers-list" style={{ marginTop: '16px' }}>
                                 <div className="hr-group-title" style={{ marginTop: '0', marginBottom: '12px' }}>
-                                  <FiFileText size={12} color="var(--gray-400)" /> ข้อมูลจากฟอร์มที่อนุญาตให้แก้ไขได้
+                                  <FiFileText size={12} color="var(--gray-400)" /> {t('history.result.edit_allowed')}
                                 </div>
                                 {editableQuestions.map((ans, i) => {
                                   const questionLabel = stripHtml(ans.question_title || `ข้อ ${i + 1}`);
+                                  const origAnsTitle = origAllAnswers.find((oa, oi) => oa.question_id === ans.question_id || oi === i)?.question_title || questionLabel;
+                                  const origQuestionLabel = stripHtml(origAnsTitle);
                                   return (
                                     <EditableAnswerField
                                       key={ans.question_id || `edit_${i}`}
@@ -713,7 +919,7 @@ export default function HistoryResult() {
                                         try {
                                           await updateHistoryResponse(record.id, {
                                             field: 'custom_answer',
-                                            question_title: questionLabel,
+                                            question_title: origQuestionLabel,
                                             value: newVal,
                                             question_id: qid
                                           });
@@ -721,7 +927,7 @@ export default function HistoryResult() {
 
                                         setFormAnswers(prev => {
                                           const updated = (prev[record.id] || []).map(a =>
-                                            (a.question_id === qid || a.question_title === ans.question_title)
+                                            (a.question_id === qid || a.question_title === origQuestionLabel)
                                               ? { ...a, answer_value: newVal }
                                               : a
                                           );
@@ -731,15 +937,15 @@ export default function HistoryResult() {
                                         setData(prevData => prevData.map(item => {
                                           if (item.id === record.id) {
                                             const sd = { ...item.summary_data };
-                                            if (sd.raw_answers && sd.raw_answers[questionLabel] !== undefined) {
-                                              sd.raw_answers[questionLabel] = newVal;
+                                            if (sd.raw_answers && sd.raw_answers[origQuestionLabel] !== undefined) {
+                                              sd.raw_answers[origQuestionLabel] = newVal;
                                             }
                                             return { ...item, summary_data: sd };
                                           }
                                           return item;
                                         }));
 
-                                        showToast('บันทึกสำเร็จ ✓', 'success');
+                                        showToast(t('history.result.save_success'), 'success');
                                       }}
                                     />
                                   );
@@ -795,9 +1001,15 @@ export default function HistoryResult() {
                                         <tbody>
                                           {Object.entries(ans.answer_value).map(([rowKey, rowValue], idx) => {
                                             let displayRowTitle = rowKey;
-                                            if (!isNaN(rowKey)) {
+                                            const match = String(rowKey).match(/^(?:แถวที่|Row)\s*(\d+)$/i);
+                                            if (match) {
+                                              const rIdx = parseInt(match[1], 10) - 1;
+                                              if (qDef && qDef.rows && qDef.rows[rIdx]) {
+                                                displayRowTitle = qDef.rows[rIdx];
+                                              }
+                                            } else if (!isNaN(rowKey)) {
                                               if (qDef && qDef.rows && qDef.rows[rowKey]) {
-                                                displayRowTitle = stripHtml(qDef.rows[rowKey]);
+                                                displayRowTitle = qDef.rows[rowKey];
                                               } else {
                                                 displayRowTitle = `แถวที่ ${Number(rowKey) + 1}`;
                                               }
@@ -805,7 +1017,13 @@ export default function HistoryResult() {
 
                                             return (
                                               <tr key={idx}>
-                                                <td className="hr-table-label">{displayRowTitle}</td>
+                                                <td className="hr-table-label">
+                                                  {/<[a-z][\s\S]*>/i.test(displayRowTitle) ? (
+                                                    <div dangerouslySetInnerHTML={{ __html: displayRowTitle }} />
+                                                  ) : (
+                                                    displayRowTitle
+                                                  )}
+                                                </td>
                                                 <td className="hr-table-value">
                                                   {Array.isArray(rowValue) ? rowValue.join(', ') : String(rowValue)}
                                                 </td>
@@ -832,7 +1050,7 @@ export default function HistoryResult() {
                                           {scoreObj.score}
                                         </div>
                                         <div style={{ fontSize: '13.5px', color: '#475569' }}>
-                                          <strong>ผลประเมินย่อย: </strong> {stripHtml(scoreObj.label)}
+                                          <strong>{t('history.result.sub_assessment_result')}: </strong> {stripHtml(scoreObj.label)}
                                         </div>
                                       </div>
                                     )}
@@ -858,7 +1076,10 @@ export default function HistoryResult() {
 
                       <div className="hr-case-footer">
                         <span className="hr-case-id-tag"># RES-{String(record.id).padStart(4, '0')}</span>
-                        <span style={{ fontSize: 11, color: 'var(--gray-400)', fontWeight: 500 }}>ส่งเมื่อ {formatDate(record.submitted_at)}</span>
+                        <span style={{ fontSize: 11, color: 'var(--gray-400)', fontWeight: 500 }}>
+                          {i18n.language === 'en' ? 'Submitted on ' : 'ส่งเมื่อ '}
+                          {getFormatDate(record.submitted_at, i18n.language)}
+                        </span>
                       </div>
                     </div>
                   )}

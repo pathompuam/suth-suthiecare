@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiRefreshCw, FiCheck, FiXCircle } from 'react-icons/fi';
 import { formatThaiID, validateThaiID, formatPhoneNumber } from './formUtils';
+import { translateTextSmart } from '../../../utils/translator';
 
 const QuestionRenderer = ({
   q,
@@ -14,6 +16,30 @@ const QuestionRenderer = ({
   handleOptionInputChange,
   handleGridAnswer
 }) => {
+  const { i18n } = useTranslation();
+  const [translatedQ, setTranslatedQ] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const translateQuestion = async () => {
+      if (i18n.language !== 'en') {
+        if (isMounted) setTranslatedQ(null);
+        return;
+      }
+      const tq = {};
+      if (q.title) tq.title = await translateTextSmart(q.title);
+      if (q.text) tq.text = await translateTextSmart(q.text);
+      if (q.options) tq.options = await Promise.all(q.options.map(opt => translateTextSmart(opt)));
+      if (q.rows) tq.rows = await Promise.all(q.rows.map(row => translateTextSmart(row)));
+      if (q.cols) tq.cols = await Promise.all(q.cols.map(col => translateTextSmart(col)));
+      if (isMounted) setTranslatedQ(tq);
+    };
+    translateQuestion();
+    return () => { isMounted = false; };
+  }, [q, i18n.language]);
+
+  const displayTitle = translatedQ?.title || q.title;
+  const displayText = translatedQ?.text || q.text;
 
   // กรณีเป็นคำถามกลุ่ม (Group)
   if (q.type === 'group') {
@@ -21,8 +47,8 @@ const QuestionRenderer = ({
     return (
       <div id={`question-${q.id}`} className="preview-group-wrapper" style={{ animationDelay: `${index * 0.05}s` }}>
         <div className="preview-group-header">
-          <h3 className="preview-sec__title" dangerouslySetInnerHTML={{ __html: q.title || 'กลุ่มคำถาม' }} />
-          {q.text && <div className="preview-hint" dangerouslySetInnerHTML={{ __html: q.text }} />}
+          <h3 className="preview-sec__title" dangerouslySetInnerHTML={{ __html: displayTitle || 'กลุ่มคำถาม' }} />
+          {displayText && <div className="preview-hint" dangerouslySetInnerHTML={{ __html: displayText }} />}
         </div>
         <div className="preview-group-body">
           {subs.map((sq, sIdx) => {
@@ -74,9 +100,9 @@ const QuestionRenderer = ({
       
       <div className="preview-sec__head_wrap">
         <div style={{ flex: 1 }}>
-          <h3 className="preview-sec__title" dangerouslySetInnerHTML={{ __html: q.title || 'คำถามที่ไม่มีชื่อ' }} />
+          <h3 className="preview-sec__title" dangerouslySetInnerHTML={{ __html: displayTitle || 'คำถามที่ไม่มีชื่อ' }} />
           {q.required && <span className="req">*</span>}
-          {q.hasDescription && q.text && <div className="preview-hint" dangerouslySetInnerHTML={{ __html: q.text }} />}
+          {q.hasDescription && displayText && <div className="preview-hint" dangerouslySetInnerHTML={{ __html: displayText }} />}
         </div>
         
         {hasAnswer && !(q.type === 'national_id' && verifiedIdentity) && (
@@ -161,12 +187,13 @@ const QuestionRenderer = ({
             {q.options.map((opt, i) => {
               const isSelected = ans === opt;
               const showInput = q.optionHasInput?.[i] === true;
+              const displayOpt = translatedQ?.options?.[i] || opt;
               
               return (
                 <div key={i} className="preview-option-wrapper">
                   <label className={`preview-chip ${isSelected ? 'active' : ''}`}>
                     <input type="radio" name={`q-${q.id}`} checked={isSelected} onChange={() => handleAnswer(q.id, opt)} />
-                    <span dangerouslySetInnerHTML={{ __html: opt }} />
+                    <span dangerouslySetInnerHTML={{ __html: displayOpt }} />
                   </label>
                   
                   {isSelected && showInput && (
@@ -195,13 +222,14 @@ const QuestionRenderer = ({
             {q.options.map((opt, i) => {
               const isChecked = (ans || []).includes(opt);
               const showInput = q.optionHasInput?.[i] === true;
+              const displayOpt = translatedQ?.options?.[i] || opt;
               
               return (
                 <div key={i} className="preview-option-wrapper">
                   <label className={`preview-check ${isChecked ? 'active' : ''}`}>
                     <input type="checkbox" checked={isChecked} onChange={() => handleAnswer(q.id, opt, true)} />
                     <span className="preview-check__mark">{isChecked ? <FiCheck strokeWidth={3} /> : ""}</span>
-                    <span dangerouslySetInnerHTML={{ __html: opt }} />
+                    <span dangerouslySetInnerHTML={{ __html: displayOpt }} />
                   </label>
                   
                   {isChecked && showInput && (
@@ -227,10 +255,12 @@ const QuestionRenderer = ({
 
         {(q.type === 'dropdown' || q.type === 'faculty') && (
           <select className={`preview-input ${hasError ? 'preview-input--error' : ''}`} value={ans || ''} onChange={(e) => handleAnswer(q.id, e.target.value)}>
-            <option value="" disabled>เลือกคำตอบ</option>
+            <option value="" disabled>{i18n.language === 'en' ? 'Select an option' : 'เลือกคำตอบ'}</option>
             {q.options.map((opt, i) => {
-              const textOnly = opt.replace(/<[^>]+>/g, '');
-              return <option key={i} value={textOnly}>{textOnly}</option>;
+              const displayOpt = translatedQ?.options?.[i] || opt;
+              const textOnly = displayOpt.replace(/<[^>]+>/g, '');
+              const originalTextOnly = opt.replace(/<[^>]+>/g, '');
+              return <option key={i} value={originalTextOnly}>{textOnly}</option>;
             })}
           </select>
         )}
@@ -241,13 +271,13 @@ const QuestionRenderer = ({
               <thead>
                 <tr>
                   <th></th>
-                  {q.cols.map((col, i) => <th key={i} dangerouslySetInnerHTML={{ __html: col }} />)}
+                  {q.cols.map((col, i) => <th key={i} dangerouslySetInnerHTML={{ __html: translatedQ?.cols?.[i] || col }} />)}
                 </tr>
               </thead>
               <tbody>
                 {q.rows.map((row, i) => (
                   <tr key={i} className={hasError && (!ans || (q.type === 'grid_multiple' ? !ans[i] : !ans[i]?.length)) ? 'grid-row-error' : ''}>
-                    <td dangerouslySetInnerHTML={{ __html: row }} />
+                    <td dangerouslySetInnerHTML={{ __html: translatedQ?.rows?.[i] || row }} />
                     {q.cols.map((col, j) => {
                       const key = String(i);
                       const rowAns = ans?.[key] || (q.type === 'grid_multiple' ? null : []);
