@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { FiClock, FiLogIn, FiChevronLeft, FiChevronRight, FiCheckCircle, FiShield, FiHeart, FiPhoneCall, FiArrowLeft } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import LanguageSwitcher from "../../components/LanguageSwitcher.jsx";
 import "./SutLanding2.css";
 
 import logo from "../../assets/logoSUTH.png";
@@ -10,6 +10,7 @@ import bgHealth from "../../assets/bg-health.jpg";
 import bgClinic from "../../assets/bg-new.jpg";
 import { formCache } from "../../services/cache";
 import api, { getForms, getBanners, getActiveClinics } from "../../services/api";
+import { translateTextSmart } from "../../utils/translator";
 
 const SLIDE_INTERVAL = 6000;
 const CARD_THEMES = ["sut2-card--blue", "sut2-card--pink", "sut2-card--green"];
@@ -25,9 +26,24 @@ function stripHtml(html) {
 // ✅ FormCard ที่แก้ไขแล้ว
 function FormCard({ form, themeClass, count, isLoaded }) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const displayImage = form.image;
-  const plainDesc = stripHtml(form.description || t('form_card.default_desc'));
+  
+  const [displayTitle, setDisplayTitle] = useState(form.title || t('form_card.no_title'));
+  const [displayDesc, setDisplayDesc] = useState(stripHtml(form.description || t('form_card.default_desc')));
+
+  useEffect(() => {
+    const title = form.title || t('form_card.no_title');
+    const desc = stripHtml(form.description || t('form_card.default_desc'));
+
+    if (i18n.language === 'en') {
+      translateTextSmart(title).then(setDisplayTitle);
+      translateTextSmart(desc).then(setDisplayDesc);
+    } else {
+      setDisplayTitle(title);
+      setDisplayDesc(desc);
+    }
+  }, [i18n.language, form.title, form.description, t]);
 
   return (
     <article
@@ -45,8 +61,8 @@ function FormCard({ form, themeClass, count, isLoaded }) {
 
       {/* ===== Body ตัวหนังสือ ===== */}
       <div className="sut2-card__body">
-        <h3 className="sut2-card__title">{form.title || t('form_card.no_title')}</h3>
-        <p className="sut2-card__desc">{plainDesc}</p>
+        <h3 className="sut2-card__title">{displayTitle}</h3>
+        <p className="sut2-card__desc">{displayDesc}</p>
       </div>
 
       {/* ===== Count ด้านล่าง ===== */}
@@ -552,8 +568,10 @@ setClinics(sorted);
           </div>
           <div className="sut2-footer-col">
             <h4>{t('sutlanding.contact_us')}</h4>
-            <p>{t('sutlanding.address')}</p>
-            <p>{t('sutlanding.tel')}</p>
+            <p>{t('sutlanding.pcu')}</p>
+            <p>{t('sutlanding.address_1')}<br />{t('sutlanding.address_2')}</p>
+            <p>{t('sutlanding.tel1')}</p>
+            <p>{t('sutlanding.tel2')}</p>
             <p>{t('sutlanding.website')}</p>
           </div>
         </div>
