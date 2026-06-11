@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { FiClock, FiLogIn, FiChevronLeft, FiChevronRight, FiCheckCircle, FiShield, FiHeart, FiPhoneCall, FiArrowLeft } from "react-icons/fi";
+import { FiClock, FiLogIn, FiChevronLeft, FiChevronRight, FiCheckCircle, FiShield, FiHeart, FiPhoneCall, FiArrowLeft, FiHelpCircle } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../../components/LanguageSwitcher.jsx";
 import "./SutLanding2.css";
@@ -28,7 +28,7 @@ function FormCard({ form, themeClass, count, isLoaded }) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const displayImage = form.image;
-  
+
   const [displayTitle, setDisplayTitle] = useState(form.title || t('form_card.no_title'));
   const [displayDesc, setDisplayDesc] = useState(stripHtml(form.description || t('form_card.default_desc')));
 
@@ -130,10 +130,10 @@ export default function SutLanding2() {
   useEffect(() => {
     // Load Clinics
     getActiveClinics().then(res => {
-     const sorted = (res.data.data || []).sort(
-  (a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999)
-);
-setClinics(sorted);
+      const sorted = (res.data.data || []).sort(
+        (a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999)
+      );
+      setClinics(sorted);
       setLoadingClinics(false);
     }).catch(err => {
       console.error("Failed to load clinics", err);
@@ -315,7 +315,7 @@ setClinics(sorted);
                         rel="noopener noreferrer"
                         key={i}
                         className={`sut2-banner-slide ${i === currentSlide ? 'active' : ''}`}
-                        style={{ display: i === currentSlide ? 'block' : 'none' }} 
+                        style={{ display: i === currentSlide ? 'block' : 'none' }}
                       >
                         <img src={slide.image} alt={slide.alt || 'banner'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </a>
@@ -579,6 +579,14 @@ setClinics(sorted);
           <p>{t('sutlanding.copyright', { year: new Date().getFullYear() })}</p>
         </div>
       </footer>
+
+      <button
+        className="sut2-floating-help-btn"
+        onClick={() => navigate("/help-center")}
+        title="ศูนย์ช่วยเหลือ"
+      >
+        <FiHelpCircle />
+      </button>
 
     </div>
   );
