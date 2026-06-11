@@ -23,6 +23,7 @@ const FormView = lazy(() => import("./pages/assessment/formView/FormView"));
 const HistorySearch = lazy(() => import("./pages/assessment/history/HistorySearch"));
 const HistoryResult = lazy(() => import("./pages/assessment/history/HistoryResult"));
 const AdminLayout = lazy(() => import("./components/AdminLayout"));
+const ClinicDetail = lazy(() => import("./pages/assessment/history/ClinicDetail"));
 
 const AdminRoute = ({ children }) => {
   const userStr = sessionStorage.getItem("suth_user") || localStorage.getItem("suth_user");
@@ -113,6 +114,7 @@ function App() {
           <Route path="/assessment/:id" element={<FormView />} />
           <Route path="/history" element={<HistorySearch />} />
           <Route path="/history/result" element={<HistoryResult />} />
+          <Route path="/clinic-detail" element={<ClinicDetail />} />
 
           <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
             <Route path="dashboard" element={<Dashboard />} />
