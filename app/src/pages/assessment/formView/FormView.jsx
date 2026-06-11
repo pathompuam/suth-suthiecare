@@ -14,6 +14,7 @@ import {
 } from "../../../services/api";
 import Swal from "sweetalert2";
 import "../../admin/forms/styles/FormPreview.css";
+import LanguageSwitcher from "../../../components/LanguageSwitcher.jsx";
 
 // 🟢 นำเข้า Component และ Helper ที่แยกออกไป
 import {
@@ -23,12 +24,15 @@ import {
   calculateQuestionScore,
 } from "./formUtils";
 import QuestionRenderer from "./QuestionRenderer";
+import { useTranslation } from "react-i18next";
+import { translateTextSmart } from "../../../utils/translator";
 
 const FormView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
+  const { t, i18n } = useTranslation();
 
   const urlToken = queryParams.get("token");
   const fallbackIdentity = queryParams.get("identity") || "";
@@ -47,6 +51,27 @@ const FormView = () => {
   const [optionInputValues, setOptionInputValues] = useState({});
   const [verifiedIdentity, setVerifiedIdentity] = useState("");
   const [isVerifyingToken, setIsVerifyingToken] = useState(false);
+  const [translatedStep, setTranslatedStep] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const translateStep = async () => {
+      const stepData = groupedSteps[currentStep];
+      if (!stepData) return;
+      
+      if (i18n.language !== 'en') {
+        if (isMounted) setTranslatedStep(null);
+        return;
+      }
+      
+      const tTitle = stepData.title ? await translateTextSmart(stepData.title) : '';
+      const tDesc = stepData.desc ? await translateTextSmart(stepData.desc) : '';
+      
+      if (isMounted) setTranslatedStep({ title: tTitle, desc: tDesc });
+    };
+    translateStep();
+    return () => { isMounted = false; };
+  }, [groupedSteps, currentStep, i18n.language]);
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
@@ -685,13 +710,18 @@ const FormView = () => {
       )}
 
    {!isPreviewMode && (
-  <button
-    className="form-view-back-btn"
-    onClick={() => navigate(-1)}
-    title="ย้อนกลับ"
-  >
-    <FiArrowLeft />
-  </button>
+  <>
+    <button
+      className="form-view-back-btn"
+      onClick={() => navigate(-1)}
+      title="ย้อนกลับ"
+    >
+      <FiArrowLeft />
+    </button>
+    <div style={{ position: 'fixed', top: '15px', right: '15px', zIndex: 1000 }}>
+      <LanguageSwitcher darkText={true} />
+    </div>
+  </>
 )}
 
       {bannerType !== "none" && (
@@ -760,14 +790,14 @@ const FormView = () => {
             <h2
               className="preview-step-intro__title"
               dangerouslySetInnerHTML={{
-                __html: stepData?.title || "ส่วนที่ไม่มีชื่อ",
+                __html: translatedStep?.title || stepData?.title || "ส่วนที่ไม่มีชื่อ",
               }}
             />
-            {stepData?.desc && (
-              <p dangerouslySetInnerHTML={{ __html: stepData.desc }} />
+            {(translatedStep?.desc || stepData?.desc) && (
+              <p dangerouslySetInnerHTML={{ __html: translatedStep?.desc || stepData.desc }} />
             )}
             <p className="req" style={{ marginTop: "10px" }}>
-              * แสดงว่าเป็นคำถามที่จำเป็น
+              * {t('form_view.req_asterisk')}
             </p>
           </div>
 
@@ -794,12 +824,11 @@ const FormView = () => {
             !verifiedIdentity && (
               <div className="preview-sec pdpa-friendly-wrapper" >
                 <div className="pdpa-header">
-                  <FiInfo /> นโยบายคุ้มครองข้อมูลส่วนบุคคล (PDPA)
+                  <FiInfo /> {t('form_view.pdpa_title')}
                 </div>
                 <p className="pdpa-desc">
-                  ระบบจำเป็นต้องใช้เลขบัตรประชาชนของคุณ เพื่อใช้ในการบันทึกและแสดงประวัติการประเมินย้อนหลัง
-                  เพื่อให้คุณสามารถติดตามผลการดูแลตัวเองได้อย่างต่อเนื่อง
-                  <span style={{ fontSize: '12px', color: '#9aa0a6', fontStyle: 'italic' }}> (ข้อมูลนี้จะถูกเก็บรักษาเป็นความลับ) </span>
+                  {t('form_view.pdpa_desc')}
+                  <span style={{ fontSize: '12px', color: '#9aa0a6', fontStyle: 'italic' }}> {t('form_view.pdpa_secret')} </span>
                 </p>
                 {nationalIdQuestions
                   .filter((q) => (answers[q.id] || "").length === 17)
@@ -816,7 +845,7 @@ const FormView = () => {
                         <div className="pdpa-check-circle">
                           {consents[q.id] === true && <FiCheck />}
                         </div>
-                        <span style={{ fontWeight: '600', fontSize: '15px' }}>รับทราบ</span>
+                        <span style={{ fontWeight: '600', fontSize: '15px' }}>{t('form_view.pdpa_ack')}</span>
                       </label>
                     </div>
                   ))}
@@ -830,14 +859,14 @@ const FormView = () => {
               onClick={() => {
                 // 🟢 เปลี่ยน confirm เป็น SweetAlert2
                 Swal.fire({
-                  title: 'ยืนยันการล้างคำตอบ?',
-                  text: "ต้องการล้างคำตอบทั้งหมดหรือไม่? ข้อมูลที่คุณกรอกไว้จะหายไป",
+                  title: t('form_view.clear_form_confirm_title'),
+                  text: t('form_view.clear_form_confirm_desc'),
                   icon: 'warning',
                   showCancelButton: true,
                   confirmButtonColor: '#d93025',
                   cancelButtonColor: '#64748b',
-                  confirmButtonText: 'ใช่, ล้างข้อมูล',
-                  cancelButtonText: 'ยกเลิก'
+                  confirmButtonText: t('form_view.clear_form_yes'),
+                  cancelButtonText: t('form_view.clear_form_cancel')
                 }).then((result) => {
                   if (result.isConfirmed) {
                     const retainedAnswers = {};
@@ -858,7 +887,7 @@ const FormView = () => {
                 });
               }}
             >
-              <FiTrash2 /> ล้างแบบฟอร์ม
+              <FiTrash2 /> {t('form_view.clear_form')}
             </button>
 
             <div className="preview-actions-nav">
@@ -871,7 +900,7 @@ const FormView = () => {
                     setCurrentStep((s) => s - 1);
                   }}
                 >
-                  <FiArrowLeft style={{ marginRight: "6px" }} /> ย้อนกลับ
+                  <FiArrowLeft style={{ marginRight: "6px" }} /> {t('form_view.btn_prev')}
                 </button>
               )}
               {currentStep < groupedSteps.length - 1 ? (
@@ -885,7 +914,7 @@ const FormView = () => {
                     }
                   }}
                 >
-                  ถัดไป <FiArrowRight style={{ marginLeft: "6px" }} />
+                  {t('form_view.btn_next')} <FiArrowRight style={{ marginLeft: "6px" }} />
                 </button>
               ) : (
                 <button
@@ -893,7 +922,7 @@ const FormView = () => {
                   className="preview-btn preview-btn--primary"
                   onClick={handleFinalSubmit}
                 >
-                  <FiCheck style={{ marginRight: "6px" }} /> ส่งคำตอบ
+                  <FiCheck style={{ marginRight: "6px" }} /> {t('form_view.btn_submit')}
                 </button>
               )}
             </div>
@@ -926,7 +955,7 @@ const FormView = () => {
             zIndex: 999,
             transition: "transform 0.2s, box-shadow 0.2s",
           }}
-          title="กลับขึ้นด้านบน"
+          title={t('form_view.scroll_top')}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-3px)";
             e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.25)";
