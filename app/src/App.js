@@ -5,6 +5,8 @@ import Login from "./pages/login/Login";
 import SutLanding2 from "./pages/sutlanding/SutLanding2";
 import ClinicManager from "./pages/admin/clinics/ClinicManager";
 import HelpCenterManager from "./pages/admin/HelpCenterManager"; 
+import HelpCenterUser from "./pages/helpCenter/HelpCenterUser";
+import ClinicHelpDetail from './pages/helpCenter/ClinicHelpDetail';
 
 // ✅ Lazy load ทุกหน้าที่เหลือ
 const AssessmentResult = lazy(() => import("./pages/result/AssessmentResult"));
@@ -104,7 +106,8 @@ function App() {
         <Routes>
           <Route path="/" element={<SutLanding2 />} />
           <Route path="/login" element={<Login />} />
-        
+           <Route path="/help-center" element={<HelpCenterUser />} />
+           <Route path="/help-center/clinic/:id" element={<ClinicHelpDetail />} />
       
           <Route path="/assessment-result" element={<AssessmentResult />} />
           <Route path="/assessment/:id" element={<FormView />} />
