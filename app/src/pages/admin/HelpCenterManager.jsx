@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   getAllClinics,
   getFaqCategories,
@@ -98,20 +98,7 @@ export default function HelpCenterManager() {
   }, [faqs]);
 
 
-  const fetchInitialData = async () => {
-    setIsLoading(true);
-    try {
-      const resClinic = await getAllClinics();
-      setClinics(resClinic.data?.data || []);
-      await fetchFaqs();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchFaqs = async () => {
+  const fetchFaqs = useCallback(async () => {
     try {
       const res = await getFaqsAdmin({ clinic_id: filterClinic, status: filterStatus, search: searchQuery });
       const faqData = res.data?.data || [];
@@ -121,7 +108,25 @@ export default function HelpCenterManager() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [filterClinic, filterStatus, searchQuery]); 
+
+  const fetchInitialData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const resClinic = await getAllClinics();
+      setClinics(resClinic.data?.data || []);
+      await fetchFaqs(); 
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchFaqs]); 
+
+  useEffect(() => {
+    fetchInitialData();
+  }, [fetchInitialData]);
+
 
   const fetchCategoriesForForm = async (clinicId) => {
     try {

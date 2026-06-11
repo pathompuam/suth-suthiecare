@@ -1,3 +1,4 @@
+/* ── 🎯 โครงสร้างเว็บบล็อกศูนย์ช่วยเหลือ ── */
 .hc-clinic-detail-wrapper {
   width: 100%;
   animation: fadeIn 0.3s ease-in-out;
@@ -8,9 +9,42 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* แบนเนอร์หัวคลินิก */
+/* ── สถานะกำลังโหลด (Loading State) ── */
+.hc-clinic-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh; 
+  width: 100%;
+  gap: 16px;
+  background-color: #ffffff;
+}
+
+.hc-clinic-loading-spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid #f1f5f9;
+  border-top: 4px solid #f47932; 
+  border-radius: 50%;
+  animation: hcClinicSpin 1s linear infinite;
+}
+
+.hc-clinic-loading-container p {
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes hcClinicSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ── แบนเนอร์หัวคลินิก (Hero Section) ── */
 .hc-clinic-detail-hero {
-  padding: 50px 0 60px 0;
+  padding: 60px 0;
   color: #ffffff;
   position: relative;
 }
@@ -23,31 +57,12 @@
   z-index: 2;
 }
 
-/* ปุ่มย้อนกลับ */
-.hc-clinic-back-btn {
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-  padding: 8px 16px;
-  border-radius: 30px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 25px;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
-}
-
-.hc-clinic-back-btn:hover {
-  background: rgba(15, 23, 42, 0.65);
-}
-
-/* ป้ายกำกับเล็กๆ หัวคลินิก */
 .hc-clinic-badge-label {
-  background: #4f46e5;
+ background: rgba(244, 121, 50, 0.18) !important; 
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important; 
+  border: 1px solid rgba(244, 121, 50, 0.3) !important; 
+  color: #ff9d66 !important; 
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 13px;
@@ -55,183 +70,337 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.hc-clinic-badge-label .mini-heart {
+  color: #ff9d66 !important; 
+  display: flex;
+  align-items: center;
 }
 
 .hc-clinic-detail-hero h1 {
-  font-size: 36px;
-  font-weight: 800;
+  font-size: 32px;
+  font-weight: 700;
   margin: 0 0 10px 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .hc-clinic-detail-hero p {
   font-size: 16px;
-  opacity: 0.95;
+  color: #e2e8f0;
   margin: 0;
-  max-width: 600px;
-  line-height: 1.5;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
-/* แถบเมนูนำทาง Tabs สีขาวด้านบน */
-.hc-clinic-tabs-nav-bar {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.hc-tabs-flex {
+/* ── โครงสร้างแบบสองฝั่งแบ่งซ้ายขวา (Split Layout) ── */
+.hc-split-layout-container {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  white-space: nowrap;
-  padding: 0 10px;
+  gap: 40px;
+  margin-top: 40px;
+  margin-bottom: 80px;
+  align-items: flex-start;
 }
 
-.hc-tab-nav-item {
-  background: none;
-  border: none;
-  padding: 18px 24px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  position: relative;
-  transition: color 0.2s;
-}
-
-.hc-tab-nav-item:hover {
-  color: #4f46e5;
-}
-
-.hc-tab-nav-item.active {
-  color: #4f46e5;
-  font-weight: 700;
-}
-
-.hc-tab-nav-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: #4f46e5;
-  border-radius: 3px 3px 0 0;
-}
-
-/* กล่องป้อนคำค้นหาคำถามภายในคลินิก */
-.hc-clinic-internal-search-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  padding: 2px 18px;
-  margin-bottom: 30px;
-}
-
-.hc-clinic-internal-search-box input {
-  border: none;
-  background: transparent;
-  outline: none;
-  padding: 14px 10px;
-  font-size: 15px;
-  width: 100%;
-  color: #1e293b;
-}
-
-.internal-search-icon {
-  color: #94a3b8;
-  font-size: 20px;
-}
-
-/* กล่องเลือกกลุ่มหมวดหมู่ย่อยแถวกลาง */
-.hc-sub-category-selector-section {
+/* ── [ฝั่งซ้าย]: แท็บรายการหมวดหมู่คำถาม (Sidebar) ── */
+.hc-clinic-sidebar-menu {
+  flex: 0 0 280px;
+  width: 280px;
   background: #ffffff;
   border: 1px solid #f1f5f9;
   border-radius: 16px;
-  padding: 24px;
+  padding: 24px 16px;
+  position: sticky;
+  top: 100px; /* เกาะขอบจอด้านบนขณะเลื่อนดูคำถาม */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.01);
 }
 
-.hc-sub-cat-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.hc-sub-cat-title .icon-grid {
-  font-size: 22px;
-  color: #4f46e5;
-}
-
-.hc-sub-cat-title h3 {
-  font-size: 16.5px;
+.hc-sidebar-title {
+  font-size: 14px;
   font-weight: 700;
-  margin: 0 0 2px 0;
-  color: #1e293b;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-left: 12px;
+  margin-bottom: 16px;
 }
 
-.hc-sub-cat-title p {
-  font-size: 13px;
-  color: #64748b;
+.hc-sidebar-nav-list {
+  list-style: none;
+  padding: 0;
   margin: 0;
-}
-
-.hc-sub-cat-button-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.hc-sub-cat-btn-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 14px 16px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hc-sidebar-nav-item {
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #475569;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.hc-sub-cat-btn-card:hover {
-  border-color: #4f46e5;
-  background: #fbfbfe;
+.hc-sidebar-nav-item:hover {
+  background: #f8fafc;
+  color: #f47932;
 }
 
-.hc-sub-cat-btn-card.selected {
-  border-color: #4f46e5;
-  background: #f4f5ff;
+.hc-sidebar-nav-item.active {
+  background: #fff7ed;
+  color: #f47932;
 }
 
-.hc-sub-cat-btn-card.selected .cat-card-name {
-  color: #4f46e5;
+/* ── [ฝั่งขวา]: คอนเทนต์หลักและกล่องคำถาม ── */
+.hc-clinic-main-content-pane {
+  flex: 1;
+  min-width: 0;
 }
 
-.cat-card-name {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: #475569;
+/* กล่องค้นหาคำถามภายใน */
+.hc-clinic-internal-search-box {
+  position: relative;
+  width: 100%;
+  margin-bottom: 30px;
 }
 
-/* ส่วนแสดงผลหัวข้อหมวดหมู่ย่อยในพาร์ทรวมคำถาม (สีม่วง) */
+.hc-clinic-internal-search-box input {
+  width: 100%;
+  padding: 14px 20px 14px 50px;
+  font-size: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  outline: none;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+  transition: all 0.2s ease;
+}
+
+.hc-clinic-internal-search-box input:focus {
+  border-color: #f47932;
+  box-shadow: 0 4px 16px rgba(244, 121, 50, 0.08);
+}
+
+.internal-search-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 20px;
+}
+
+/* กลุ่มแสดงหัวข้อหมวดหมู่ */
+.hc-category-block-group {
+  margin-bottom: 40px;
+}
+
 .hc-category-block-header {
-  border-bottom: 2px solid #eef2f6;
-  padding-bottom: 8px;
-  margin-top: 15px;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .hc-category-block-header h4 {
   font-size: 18px;
   font-weight: 700;
-  color: #4f46e5; /* สีม่วง Indigo */
+  color: #f47932; 
   margin: 0;
-  letter-spacing: 0.3px;
+}
+
+/* แถบรายการคำถาม Accordion */
+.hc-user-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hc-faq-item {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+  transition: all 0.2s ease;
+}
+
+.hc-faq-question {
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  color: #334155;
+  transition: background 0.2s;
+}
+
+.hc-faq-question:hover {
+  background: #f8fafc;
+}
+
+.hc-faq-question svg {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+/* เมื่อข้อคำถามเปิดแสดงคำตอบด้านล่าง */
+.hc-faq-item.open {
+  border-color: #fed7aa;
+}
+
+.hc-faq-item.open .hc-faq-question {
+  color: #f47932;
+  background: #fff7ed;
+}
+
+.hc-faq-item.open svg {
+  transform: rotate(180deg);
+  color: #f47932;
+}
+
+.hc-faq-answer {
+ padding: 24px;
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.8;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+.hc-faq-answer p {
+  margin: 0 0 12px 0;
+  text-align: inherit;
+}
+.hc-faq-answer p:last-child {
+  margin-bottom: 0;
+}
+.hc-faq-answer strong, 
+.hc-faq-answer b {
+  font-weight: 700;
+  color: #0f172a; 
+}
+.hc-faq-answer em, 
+.hc-faq-answer i {
+  font-style: italic;
+}
+.hc-faq-answer u {
+  text-decoration: underline;
+}
+
+.hc-faq-answer s, 
+.hc-faq-answer strike {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+.hc-faq-answer ul, 
+.hc-faq-answer ol {
+  margin: 0 0 16px 24px; 
+  padding: 0;
+}
+.hc-faq-answer ul {
+  list-style-type: disc !important;
+}
+
+.hc-faq-answer ol {
+  list-style-type: decimal !important;
+}
+
+.hc-faq-answer li {
+  margin-bottom: 8px;
+  padding-left: 4px;
+  line-height: 1.7;
+}
+.hc-faq-answer li:last-child {
+  margin-bottom: 0;
+}
+.hc-faq-answer img {
+  max-width: 100% !important; 
+  height: auto !important;     
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+}
+.hc-faq-answer a {
+  color: #4851f6; 
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+.hc-faq-answer a:hover {
+  color: #0c2aea;
+}
+
+/* จัดโครงสร้าง Text Alignment เพิ่มเติมในกรณีที่ Editor ฝังคลาสสไตล์มา */
+.hc-faq-answer .ql-align-center { text-align: center; }
+.hc-faq-answer .ql-align-right { text-align: right; }
+.hc-faq-answer .ql-align-justify { text-align: justify; }
+
+/* คุมขนาดตารางภายในคำตอบ (ถ้ามี) */
+.hc-faq-answer table {
+  width: 100% !important;
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+}
+.hc-faq-answer th, 
+.hc-faq-answer td {
+  border: 1px solid #cbd5e1;
+  padding: 8px 12px;
+  text-align: left;
+}
+/* หน้าต่างกรณีไม่มีข้อมูล */
+.hc-faq-empty-state {
+  text-align: center;
+  padding: 60px 0;
+  color: #94a3b8;
+}
+
+.hc-faq-empty-state svg {
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.hc-faq-empty-state p {
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ── การรองรับการแสดงผลบนหน้าจอมือถือ (Responsive) ── */
+@media (max-width: 991px) {
+  .hc-split-layout-container {
+    flex-direction: column;
+    gap: 30px;
+  }
+  
+  .hc-clinic-sidebar-menu {
+    width: 100%;
+    flex: none;
+    position: static;
+    padding: 16px;
+  }
+  
+  .hc-sidebar-nav-list {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hc-sidebar-nav-list::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .hc-sidebar-nav-item {
+    white-space: nowrap;
+  }
 }
