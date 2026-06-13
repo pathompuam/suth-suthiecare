@@ -1,0 +1,146 @@
+.clinic-detail-page{
+  max-width:1400px;
+  margin:auto;
+  padding:24px;
+  background:#faf7ff;
+  min-height:100vh;
+}
+
+.clinic-back-btn{
+  border:none;
+  background:white;
+  padding:10px 18px;
+  border-radius:14px;
+  cursor:pointer;
+  margin-bottom:20px;
+}
+
+.clinic-hero{
+  background:linear-gradient(
+    135deg,
+    #f6f2ff,
+    #fdf7ff
+  );
+  border-radius:24px;
+  padding:30px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+}
+
+.clinic-hero-content h1{
+  font-size:42px;
+  margin:0;
+  color:#1e293b;
+}
+
+.clinic-hero-content p{
+  color:#64748b;
+  margin-top:10px;
+}
+
+.clinic-hero-image{
+  font-size:80px;
+}
+
+.clinic-top-section{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:24px;
+  margin-bottom:24px;
+}
+
+.bmi-card,
+.advice-card{
+  background:white;
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+
+.card-title{
+  font-size:22px;
+  font-weight:700;
+  margin-bottom:20px;
+}
+
+.bmi-placeholder{
+  min-height:350px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  justify-content:center;
+  align-items:center;
+  background:#fafafa;
+  border-radius:16px;
+}
+
+.advice-box{
+  background:#f7f0ff;
+  padding:20px;
+  border-radius:16px;
+}
+
+.advice-box h4{
+  color:#8b5cf6;
+  margin-bottom:12px;
+}
+
+.timeline-section{
+  background:white;
+  border-radius:24px;
+  padding:24px;
+}
+
+.timeline-section h2{
+  margin-bottom:20px;
+}
+
+.timeline-card{
+  display:flex;
+  align-items:center;
+  gap:20px;
+  padding:18px;
+  border:1px solid #eee;
+  border-radius:16px;
+  margin-bottom:16px;
+}
+
+.timeline-icon{
+  width:50px;
+  height:50px;
+  border-radius:12px;
+  background:#f3e8ff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.timeline-content{
+  flex:1;
+}
+
+.timeline-title{
+  font-weight:600;
+}
+
+.timeline-date{
+  color:#64748b;
+  font-size:14px;
+}
+
+.timeline-btn{
+  border:none;
+  background:#f3e8ff;
+  color:#7c3aed;
+  padding:10px 18px;
+  border-radius:999px;
+  cursor:pointer;
+}
+
+.empty-timeline{
+  text-align:center;
+  color:#94a3b8;
+  padding:40px;
+}

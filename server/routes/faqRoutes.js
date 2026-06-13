@@ -4,15 +4,14 @@ const db = require('../config/db');
 
 // ==========================================
 // SECTION 1: จัดการหมวดหมู่คำถาม (FAQ Categories)
-// Path จริงที่เกิดจากการรวมกับ index.js คือ /api/admin/help-center/categories
 // ==========================================
 
-// 1. POST: สร้างหมวดหมู่คำถามย่อยใหม่ (🌟 เปลี่ยนเป็น db.query)
+// 1. POST: สร้างหมวดหมู่คำถามย่อยใหม่ 
 router.post('/categories', async (req, res) => {
-    const { clinic_id, category_name, display_order } = req.body;
+    const { clinic_id, category_name, display_order, status } = req.body;
     try {
-        const query = `INSERT INTO faq_categories (clinic_id, category_name, display_order) VALUES (?, ?, ?)`;
-        await db.query(query, [clinic_id, category_name, display_order || 0]);
+        const query = `INSERT INTO faq_categories (clinic_id, category_name, display_order, status) VALUES (?, ?, ?, ?)`;
+        await db.query(query, [clinic_id, category_name, display_order || 0, status || 'published']);
         res.json({ success: true, message: 'สร้างหมวดหมู่คำถามสำเร็จ' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -31,13 +30,13 @@ router.get('/categories/:clinic_id', async (req, res) => {
     }
 });
 
-// 3. PATCH: สำหรับอัปเดตชื่อหมวดหมู่ย่อย (🌟 เปลี่ยนเป็น db.query)
+// 3. PATCH: สำหรับอัปเดตชื่อหมวดหมู่ย่อย 
 router.patch('/categories/:id', async (req, res) => {
     const { id } = req.params;
-    const { category_name } = req.body;
+    const { category_name, display_order, status } = req.body; 
     try {
-        const query = `UPDATE faq_categories SET category_name = ? WHERE id = ?`;
-        await db.query(query, [category_name, id]); 
+        const query = `UPDATE faq_categories SET category_name = ?, display_order = ?, status = ? WHERE id = ?`;
+        await db.query(query, [category_name, display_order || 0, status || 'published', id]); 
         res.json({ 
             success: true, 
             message: 'อัปเดตข้อมูลหมวดหมู่ย่อยเรียบร้อยแล้ว' 
@@ -114,18 +113,16 @@ router.post('/faqs', async (req, res) => {
         // เคลียร์ค่าประเภทตัวแปรให้ตรงตามฟิลด์ตาราง SQL ก่อนนำไปประมวลผล
         const finalCategoryId = parseInt(category_id) || null;
         const finalQuestion = question ? question.trim() : '';
-        const finalAnswer = answer ? answer.trim() : ''; // ตัวข้อความ HTML จาก ReactQuill
+        const finalAnswer = answer ? answer.trim() : ''; 
         const finalIsHomepage = (is_homepage === 1 || is_homepage === true) ? 1 : 0;
         const finalStatus = status || 'published';
         const finalDisplayOrder = parseInt(display_order) || 0;
 
-        // คำสั่ง INSERT ระบุคอลัมน์ชัดเจน
         const query = `
             INSERT INTO faqs (category_id, question, answer, is_homepage, status, display_order) 
             VALUES (?, ?, ?, ?, ?, ?)
         `;
         
-        // สั่งรันคำสั่ง SQL ผ่าน db.query เพื่อความเสถียรสูงสุดกับข้อความยาว ๆ 
         const [result] = await db.query(query, [
             finalCategoryId, 
             finalQuestion, 
