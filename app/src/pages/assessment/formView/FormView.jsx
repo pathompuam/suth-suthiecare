@@ -624,11 +624,14 @@ const FormView = () => {
         consent_given: consentGiven,
       };
 
+      const hasBooking = formData?.questions?.some(q => q.type === 'booking' || (q.type === 'group' && q.subQuestions?.some(sq => sq.type === 'booking')));
+
       // 🟢 นำ Payload ทั้งหมดส่งไปหน้า AssessmentResult โดยที่ยังไม่ต้องยิง API บันทึกข้อมูล
       navigate("/assessment-result", { 
         state: { 
           results: scoreResultsArray,
           formId: id,
+          hasBooking: hasBooking,
           payload: {
             answers: mergedAnswers,
             questionTitles: qTitles,
@@ -811,6 +814,7 @@ const FormView = () => {
               errors={errors}
               verifiedIdentity={verifiedIdentity}
               optionInputValues={optionInputValues}
+              optionUsage={formData?.optionUsage}
               handleClearQuestionAnswer={handleClearQuestionAnswer}
               handleAnswer={handleAnswer}
               handleOptionInputChange={handleOptionInputChange}

@@ -88,6 +88,7 @@ export default function AssessmentResult() {
   const results = location.state?.results || [];
   const formId = location.state?.formId;
   const payload = location.state?.payload;
+  const hasBooking = location.state?.hasBooking;
 
   // 🟢 State ควบคุมสถานะการส่งข้อมูล
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -479,6 +480,12 @@ export default function AssessmentResult() {
         })}
 
         {/* 🟢 ACTIONS BUTTONS ควบคุมการแสดงผลตาม State */}
+        {hasBooking && !isSaved && (
+          <div style={{ color: '#d32f2f', fontSize: '14px', background: '#ffebee', padding: '12px 16px', borderRadius: '12px', margin: '0 auto 20px auto', maxWidth: '600px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <FiInfo style={{ transform: 'translateY(2px)', marginRight: '6px' }} size={16} />
+            <b>หมายเหตุ:</b> การเลือกโควต้าจะยังไม่สมบูรณ์จนกว่าคุณจะกด <b>"ส่งข้อมูลให้เจ้าหน้าที่"</b> กรุณากดส่งข้อมูลเพื่อยืนยันสิทธิ์
+          </div>
+        )}
         <div className="ar-actions">
 
           {/* ปุ่มกลับหน้าหลัก (แสดงตลอด) */}
