@@ -11,6 +11,7 @@ const QuestionRenderer = ({
   errors,
   verifiedIdentity,
   optionInputValues,
+  optionUsage,
   handleClearQuestionAnswer,
   handleAnswer,
   handleOptionInputChange,
@@ -120,6 +121,30 @@ const QuestionRenderer = ({
       <div className="preview-sec__body">
         {q.image && <div className="preview-q-img"><img src={q.image} alt="question" /></div>}
 
+        {q.type === 'video' && (() => {
+          const getYoutubeEmbedUrl = (url) => {
+            if (!url) return '';
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+            const match = url.match(regExp);
+            const videoId = (match && match[2].length === 11) ? match[2] : '';
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+          };
+          const embedUrl = getYoutubeEmbedUrl(q.videoUrl);
+          if (!embedUrl) return null;
+          return (
+            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px', marginBottom: '15px' }}>
+              <iframe 
+                src={embedUrl} 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }} 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen 
+                referrerPolicy="strict-origin-when-cross-origin"
+                title="YouTube Video"
+              />
+            </div>
+          );
+        })()}
+
         {(q.type === 'short_text' || q.type === 'full_name') && (
           <input type="text" className={`preview-input ${hasError ? 'preview-input--error' : ''}`} placeholder="คำตอบของคุณ" value={ans || ''} onChange={(e) => handleAnswer(q.id, e.target.value)} />
         )}
@@ -182,6 +207,76 @@ const QuestionRenderer = ({
           );
         })()}
 
+        {q.type === 'booking' && q.displayAs === 'dropdown' && (
+          <select className={`preview-input ${hasError ? 'preview-input--error' : ''}`} value={ans || ''} onChange={(e) => handleAnswer(q.id, e.target.value)}>
+            <option value="" disabled>{i18n.language === 'en' ? 'Select an option' : 'เลือกคำตอบ'}</option>
+            {q.options.map((opt, i) => {
+              const displayOpt = translatedQ?.options?.[i] || opt;
+              const textOnly = displayOpt.replace(/<[^>]+>/g, '');
+              const originalTextOnly = opt.replace(/<[^>]+>/g, '');
+              const limit = q.optionLimits?.[i];
+              const usageCount = optionUsage?.[q.id]?.[opt] || 0;
+              const isLimited = limit !== undefined && limit !== null && limit !== '';
+              const remaining = isLimited ? Math.max(0, limit - usageCount) : null;
+              const isFull = isLimited && remaining === 0;
+              const fullText = i18n.language === 'en' ? 'Full' : 'เต็ม';
+              const leftText = i18n.language === 'en' ? 'Left' : 'เหลือ';
+              const optionLabel = isFull ? `[ ${fullText} ] - ${textOnly}` : (isLimited ? `[ ${leftText} ${remaining} ] - ${textOnly}` : textOnly);
+              return <option key={i} value={originalTextOnly} disabled={isFull}>{optionLabel}</option>;
+            })}
+          </select>
+        )}
+
+        {q.type === 'booking' && q.displayAs !== 'dropdown' && (
+          <div className="preview-chip-col">
+            {q.options.map((opt, i) => {
+              const isSelected = ans === opt;
+              const showInput = q.optionHasInput?.[i] === true;
+              const displayOpt = translatedQ?.options?.[i] || opt;
+              
+              const limit = q.optionLimits?.[i];
+              const usageCount = optionUsage?.[q.id]?.[opt] || 0;
+              const isLimited = limit !== undefined && limit !== null && limit !== '';
+              const remaining = isLimited ? Math.max(0, limit - usageCount) : null;
+              const isFull = isLimited && remaining === 0;
+              const fullText = i18n.language === 'en' ? 'Full' : 'เต็มแล้ว';
+              const leftText = i18n.language === 'en' ? 'Left' : 'เหลือ';
+
+              return (
+                <div key={i} className="preview-option-wrapper">
+                  <label className={`preview-chip ${isSelected ? 'active' : ''}`} style={isFull ? { opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#f1f5f9' } : {}}>
+                    <input type="radio" name={`q-${q.id}`} checked={isSelected} disabled={isFull} onChange={() => { if (!isFull) handleAnswer(q.id, opt); }} />
+                    <span style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                      <div style={{ display: 'inline' }} dangerouslySetInnerHTML={{ __html: displayOpt }} />
+                      {isLimited && (
+                        <span style={{ marginLeft: '8px', fontSize: '0.85em', color: isFull ? '#d32f2f' : '#2e7d32', fontWeight: 'bold', background: isFull ? '#ffebee' : '#e8f5e9', padding: '2px 8px', borderRadius: '12px', flexShrink: 0 }}>
+                          {isFull ? fullText : `${leftText} ${remaining}`}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                  
+                  {isSelected && showInput && (
+                    <div style={{ marginLeft: '30px', animation: 'fadeIn 0.2s ease-out' }}>
+                      <input 
+                        type="text" 
+                        className="preview-input" 
+                        placeholder="โปรดระบุรายละเอียด..." 
+                        value={optionInputValues[`${q.id}_${opt}`] || ''}
+                        onChange={(e) => handleOptionInputChange(q.id, opt, e.target.value)}
+                        style={{ fontSize: '14px', padding: '6px 0', borderBottomColor: 'var(--theme-color)', maxWidth: '300px' }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                  
+                  {q.optionImages && q.optionImages[i] && <img src={q.optionImages[i]} alt="option" className="preview-opt-img" style={isFull ? { opacity: 0.5 } : {}} />}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {q.type === 'multiple_choice' && (
           <div className="preview-chip-col">
             {q.options.map((opt, i) => {
@@ -193,7 +288,7 @@ const QuestionRenderer = ({
                 <div key={i} className="preview-option-wrapper">
                   <label className={`preview-chip ${isSelected ? 'active' : ''}`}>
                     <input type="radio" name={`q-${q.id}`} checked={isSelected} onChange={() => handleAnswer(q.id, opt)} />
-                    <span dangerouslySetInnerHTML={{ __html: displayOpt }} />
+                    <div style={{ display: 'inline' }} dangerouslySetInnerHTML={{ __html: displayOpt }} />
                   </label>
                   
                   {isSelected && showInput && (
@@ -229,7 +324,7 @@ const QuestionRenderer = ({
                   <label className={`preview-check ${isChecked ? 'active' : ''}`}>
                     <input type="checkbox" checked={isChecked} onChange={() => handleAnswer(q.id, opt, true)} />
                     <span className="preview-check__mark">{isChecked ? <FiCheck strokeWidth={3} /> : ""}</span>
-                    <span dangerouslySetInnerHTML={{ __html: displayOpt }} />
+                    <div style={{ display: 'inline' }} dangerouslySetInnerHTML={{ __html: displayOpt }} />
                   </label>
                   
                   {isChecked && showInput && (
