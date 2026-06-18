@@ -1144,6 +1144,26 @@ input:checked+.hc-slider:before {
   font-weight: 600;
   margin-top: 2px;
 }
+
+.hc-form-group select,
+.hc-modal-content select {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important; 
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  padding-right: 30px !important;
+  height: auto !important; 
+  min-height: 42px; 
+}
+
+.hc-form-group select option,
+.hc-modal-content select option {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
 /* ============================================================
    RESPONSIVE DESIGN SYSTEM
    ============================================================ */
