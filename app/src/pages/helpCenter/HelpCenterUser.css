@@ -568,14 +568,181 @@
 
 /* MOBILE RESPONSIVE */
 @media (max-width: 768px) {
-  .hc-user-hero h1 { font-size: 32px; }
-  .hc-user-clinic-grid { grid-template-columns: 1fr; }
-  .hc-user-contact-box { flex-direction: column; text-align: center; gap: 25px; }
-  .hc-slider-arrow { display: none; }
+  /* 🎯 1. ส่วนแบนเนอร์ด้านบน */
+  .hc-user-hero {
+    padding: 60px 0 80px 0 !important;
+  }
+  
+  .hc-user-hero h1 { 
+    font-size: 26px !important;
+    line-height: 1.3 !important;
+  }
+  
+  .hc-user-hero p {
+    font-size: 14px !important;
+    margin-bottom: 25px !important;
+    padding: 0 10px;
+  }
+
+  /* 🎯 2. ช่องพิมพ์ค้นหาหลัก */
+  .hc-user-search-wrapper {
+    margin: 0 10px !important;
+    padding: 2px 14px !important;
+  }
+  
+  .hc-user-search-wrapper input {
+    font-size: 14px !important;
+    padding: 10px 6px !important;
+  }
+
+  .hc-search-suggestions-dropdown {
+    width: calc(100% - 20px) !important;
+    left: 10px !important;
+  }
+
+  .hc-section-header-row {
+    display: flex !important;
+    flex-direction: column !important; 
+    align-items: flex-start !important;
+    gap: 0 !important;
+    margin-top: 35px !important;
+    margin-bottom: 25px !important;
+    padding: 0 4px !important;
+  }
+
+  .hc-section-header {
+    display: flex !important;
+    flex-direction: row !important; 
+    align-items: flex-start !important; 
+    gap: 8px !important; 
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* ไอคอนสี่เหลี่ยมส้ม */
+  .hc-header-icon {
+    margin-top: 4px !important;
+    flex-shrink: 0 !important; 
+    font-size: 20px !important;
+  }
+
+  .hc-section-header-text {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+  }
+
+  .hc-header-title h2 {
+    font-size: 18px !important; 
+    margin: 0 !important;
+    line-height: 1.3 !important;
+    color: #1e293b !important;
+  }
+  .hc-section-header p {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    color: #64748b !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .hc-link-more {
+    align-self: flex-start !important; 
+    margin-top: 14px !important; 
+    font-size: 13px !important;
+    padding: 6px 14px !important;
+    border-radius: 20px !important;
+    white-space: nowrap !important;    
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  /* 🎯 4. ระบบการ์ดสไลด์และกล่องควบคุมบนมือถือ */
+  .hc-user-clinic-grid-scroll {
+    justify-content: flex-start !important;
+    overflow-x: auto !important; 
+    display: flex !important;
+    gap: 16px !important;
+    padding: 10px 16px 20px 16px !important; 
+    width: auto !important;
+    margin: 0 -20px !important; 
+    scroll-snap-type: x mandatory !important; 
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .hc-user-clinic-card-scroll {
+    flex: 0 0 80% !important; 
+    min-height: auto !important;
+    padding: 20px !important;
+    scroll-snap-align: center !important; 
+  }
+
+  /* 🟢 ปุ่มลูกศรเลื่อนซ้าย-ขวาสำหรับหน้าจอมือถือ */
+  .hc-slider-arrow {
+    display: flex !important; 
+    width: 36px !important;   
+    height: 36px !important;
+    background: rgba(255, 255, 255, 0.95) !important; 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important; 
+  }
+
+  .hc-slider-arrow.left {
+    left: 5px !important; 
+  }
+
+  .hc-slider-arrow.right {
+    right: 5px !important; 
+  }
+  
+  .hc-slider-arrow svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* แผงการ์ดในโหมด Grid ดูทั้งหมด */
+  .hc-user-clinic-grid-expanded {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 10px 0 !important;
+  }
+
+  .hc-user-clinic-card {
+    min-height: auto !important;
+    padding: 20px !important;
+  }
+
+  /* 🎯 5. กล่องติดต่อด้านล่างสุด (CTA) */
+  .hc-user-contact-box {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 20px !important;
+    padding: 24px !important;
+    margin: 50px 0 !important;
+    border-radius: 16px !important;
+  }
+
+  .hc-contact-info {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .hc-btn-contact-live {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 12px 24px !important;
+  }
 }
 
-@media (max-width: 1460px) {
-  .hc-user-clinic-grid-scroll {
-    justify-content: flex-start;
+/* เพิ่มเติมสำหรับหน้าจอสมาร์ตโฟนขนาดเล็กพิเศษ (จอกว้างน้อยกว่า 480px) */
+@media (max-width: 480px) {
+  
+  .hc-header-title h2 {
+    font-size: 16px !important; 
+  }
+
+  .hc-user-clinic-card-scroll {
+    flex: 0 0 82% !important;
   }
 }

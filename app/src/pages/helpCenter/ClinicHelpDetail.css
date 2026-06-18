@@ -452,14 +452,105 @@
 /* Responsive ปรับปรุงใหม่ */
 @media (max-width: 991px) {
   .hc-split-layout-container {
-    flex-direction: column;
-    gap: 24px;
+    flex-direction: column !important; 
+    gap: 20px !important;
+    margin-top: 20px !important;
+    margin-bottom: 50px !important;
   }
   
   .hc-clinic-sidebar-menu {
-    width: 100%;
-    flex: none;
-    position: static;
-    max-height: 400px;
+    width: 100% !important;
+    flex: none !important;
+    position: static !important; 
+    max-height: none !important;
+    padding: 18px 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .hc-sidebar-sub-question-list {
+    padding-left: 6px !important; 
+  }
+
+  .hc-clinic-main-content-pane {
+    width: 100% !important;
+    min-width: 0 !important; 
+    box-sizing: border-box !important;
+  }
+
+  .hc-clinic-main-content-pane .hc-answer-display-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; 
+  }
+
+  .hc-clinic-main-content-pane .hc-answer-header-zone {
+    padding: 20px 14px !important; 
+    box-sizing: border-box !important;
+  }
+
+  .hc-clinic-main-content-pane .hc-answer-header-zone h3 {
+    font-size: 16px !important; 
+    line-height: 1.4 !important;
+    word-break: break-word !important; 
+  }
+
+  .hc-clinic-main-content-pane .hc-answer-body-content {
+    padding: 18px 14px !important; 
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important; 
+  }
+
+  .hc-clinic-main-content-pane .hc-faq-answer.suth-rich-content {
+    font-size: 14px !important; 
+    line-height: 1.6 !important;
+    word-break: break-word !important; 
+    overflow-wrap: break-word !important;
+    width: 100% !important;
+  }
+
+  .hc-clinic-main-content-pane .hc-faq-answer.suth-rich-content img {
+    max-width: 100% !important; 
+    width: 100% !important;
+    height: auto !important;
+    margin: 12px 0 !important;
+    border-radius: 8px !important;
+  }
+  .hc-clinic-main-content-pane .hc-faq-answer.suth-rich-content ul,
+  .hc-clinic-main-content-pane .hc-faq-answer.suth-rich-content ol {
+    margin: 10px 0 12px 18px !important; 
+    padding: 0 !important;
+  }
+  .hc-clinic-main-content-pane .hc-faq-answer.suth-rich-content table {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    overflow-x: auto !important; 
+  }
+}
+
+@media (max-width: 576px) {
+  .hc-clinic-detail-hero {
+    padding: 30px 0 !important;
+  }
+
+  .hc-clinic-hero-inner {
+    flex-direction: column !important; 
+    text-align: center !important;
+    gap: 14px !important;
+  }
+
+  .hc-clinic-text-block {
+    align-items: center !important; 
+  }
+
+  .hc-clinic-logo-frame {
+    width: 76px !important;
+    height: 76px !important;
+  }
+
+  .hc-clinic-detail-hero h1 {
+    font-size: 22px !important;
   }
 }

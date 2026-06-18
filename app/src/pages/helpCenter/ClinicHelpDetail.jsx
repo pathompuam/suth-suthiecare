@@ -161,7 +161,7 @@ export default function ClinicHelpDetail() {
 
     return (
         <div className="hc-clinic-detail-wrapper">
-            <Navbar showBack={true} backText="กลับหน้าหลักศูนย์ช่วยเหลือ" />
+            <Navbar showBack={true} backText="กลับ" />
 
             {/* ── HERO BANNER ── */}
             <header className="hc-clinic-detail-hero">

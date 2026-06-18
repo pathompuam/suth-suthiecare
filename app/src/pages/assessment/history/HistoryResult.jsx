@@ -181,12 +181,12 @@ export default function HistoryResult() {
             }));
           }
           if (sd.raw_answers) {
-             const tRaw = {};
-             for (const [k, v] of Object.entries(sd.raw_answers)) {
-                const tK = await translateTextSmart(k);
-                tRaw[tK] = v;
-             }
-             sd.raw_answers = tRaw;
+            const tRaw = {};
+            for (const [k, v] of Object.entries(sd.raw_answers)) {
+              const tK = await translateTextSmart(k);
+              tRaw[tK] = v;
+            }
+            sd.raw_answers = tRaw;
           }
           dCopy.summary_data = sd;
         }
@@ -202,84 +202,84 @@ export default function HistoryResult() {
       const tAnswers = {};
       for (const [idStr, answers] of Object.entries(formAnswers)) {
         if (Array.isArray(answers)) {
-           const record = data.find(d => String(d.id) === String(idStr));
-           const formQs = record ? (formQuestionsMap[record.form_id] || []) : [];
-           
-           const flatFormQs = [];
-           formQs.forEach(q => {
-             if (q.type === 'group' && q.subQuestions) flatFormQs.push(...q.subQuestions);
-             else flatFormQs.push(q);
-           });
+          const record = data.find(d => String(d.id) === String(idStr));
+          const formQs = record ? (formQuestionsMap[record.form_id] || []) : [];
 
-           tAnswers[idStr] = await Promise.all(answers.map(async (ans) => {
-             const ansCopy = { ...ans };
-             const qLabel = stripHtml(ans.question_title || '');
-             const qDef = flatFormQs.find(q => stripHtml(q.title) === qLabel || stripHtml(q.title) === stripHtml(ansCopy.question_title));
+          const flatFormQs = [];
+          formQs.forEach(q => {
+            if (q.type === 'group' && q.subQuestions) flatFormQs.push(...q.subQuestions);
+            else flatFormQs.push(q);
+          });
 
-             if (ansCopy.question_title) ansCopy.question_title = await translateTextSmart(ansCopy.question_title);
+          tAnswers[idStr] = await Promise.all(answers.map(async (ans) => {
+            const ansCopy = { ...ans };
+            const qLabel = stripHtml(ans.question_title || '');
+            const qDef = flatFormQs.find(q => stripHtml(q.title) === qLabel || stripHtml(q.title) === stripHtml(ansCopy.question_title));
 
-             if (ansCopy.answer_value !== undefined && ansCopy.answer_value !== null) {
-                let isGrid = false;
-                if (qDef && (qDef.type === 'grid_multiple' || qDef.type === 'grid_checkbox')) isGrid = true;
-                else if (typeof ansCopy.answer_value === 'object' && !Array.isArray(ansCopy.answer_value)) isGrid = true;
+            if (ansCopy.question_title) ansCopy.question_title = await translateTextSmart(ansCopy.question_title);
 
-                if (isGrid) {
-                   const tGrid = {};
-                   for (const [rKey, rVal] of Object.entries(ansCopy.answer_value)) {
-                      let rowTitle = rKey;
-                      const match = String(rKey).match(/^(?:แถวที่|Row)\s*(\d+)$/i);
-                      let rIdx = -1;
-                      if (match) rIdx = parseInt(match[1], 10) - 1;
-                      else if (!isNaN(rKey)) rIdx = parseInt(rKey, 10);
+            if (ansCopy.answer_value !== undefined && ansCopy.answer_value !== null) {
+              let isGrid = false;
+              if (qDef && (qDef.type === 'grid_multiple' || qDef.type === 'grid_checkbox')) isGrid = true;
+              else if (typeof ansCopy.answer_value === 'object' && !Array.isArray(ansCopy.answer_value)) isGrid = true;
 
-                      if (rIdx >= 0 && qDef && qDef.rows && qDef.rows[rIdx]) {
-                          const stripped = stripHtml(qDef.rows[rIdx]);
-                          if (stripped) rowTitle = stripped;
-                      }
+              if (isGrid) {
+                const tGrid = {};
+                for (const [rKey, rVal] of Object.entries(ansCopy.answer_value)) {
+                  let rowTitle = rKey;
+                  const match = String(rKey).match(/^(?:แถวที่|Row)\s*(\d+)$/i);
+                  let rIdx = -1;
+                  if (match) rIdx = parseInt(match[1], 10) - 1;
+                  else if (!isNaN(rKey)) rIdx = parseInt(rKey, 10);
 
-                      let tRKey = rowTitle;
-                      if (typeof rowTitle === 'string' && rowTitle.trim() !== '') {
-                          if (rowTitle.match(/^(?:แถวที่|Row)\s*(\d+)$/i)) {
-                              tRKey = `Row ${rowTitle.match(/(\d+)/)[1]}`;
-                          } else {
-                              tRKey = await translateTextSmart(rowTitle);
-                          }
-                      } else if (rIdx >= 0) {
-                          tRKey = `Row ${rIdx + 1}`;
-                      }
+                  if (rIdx >= 0 && qDef && qDef.rows && qDef.rows[rIdx]) {
+                    const stripped = stripHtml(qDef.rows[rIdx]);
+                    if (stripped) rowTitle = stripped;
+                  }
 
-                      let tRVal = rVal;
-                      if (typeof rVal === 'string') tRVal = await translateTextSmart(rVal);
-                      else if (Array.isArray(rVal)) tRVal = await Promise.all(rVal.map(async v => typeof v === 'string' ? await translateTextSmart(v) : v));
-                      tGrid[tRKey] = tRVal;
-                   }
-                   ansCopy.answer_value = tGrid;
-                } else if (qDef) {
-                   const choiceTypes = ['multiple_choice', 'checkboxes', 'dropdown', 'radio', 'linear_scale'];
-                   if (choiceTypes.includes(qDef.type)) {
-                      if (Array.isArray(ansCopy.answer_value)) {
-                         ansCopy.answer_value = await Promise.all(ansCopy.answer_value.map(async v => {
-                            if (typeof v === 'string' && v.includes(' : ')) {
-                               const parts = v.split(' : ');
-                               return `${await translateTextSmart(parts[0])} : ${parts[1]}`;
-                            }
-                            return typeof v === 'string' ? await translateTextSmart(v) : v;
-                         }));
-                      } else if (typeof ansCopy.answer_value === 'string') {
-                         if (ansCopy.answer_value.includes(' : ')) {
-                            const parts = ansCopy.answer_value.split(' : ');
-                            ansCopy.answer_value = `${await translateTextSmart(parts[0])} : ${parts[1]}`;
-                         } else {
-                            ansCopy.answer_value = await translateTextSmart(ansCopy.answer_value);
-                         }
-                      }
-                   }
+                  let tRKey = rowTitle;
+                  if (typeof rowTitle === 'string' && rowTitle.trim() !== '') {
+                    if (rowTitle.match(/^(?:แถวที่|Row)\s*(\d+)$/i)) {
+                      tRKey = `Row ${rowTitle.match(/(\d+)/)[1]}`;
+                    } else {
+                      tRKey = await translateTextSmart(rowTitle);
+                    }
+                  } else if (rIdx >= 0) {
+                    tRKey = `Row ${rIdx + 1}`;
+                  }
+
+                  let tRVal = rVal;
+                  if (typeof rVal === 'string') tRVal = await translateTextSmart(rVal);
+                  else if (Array.isArray(rVal)) tRVal = await Promise.all(rVal.map(async v => typeof v === 'string' ? await translateTextSmart(v) : v));
+                  tGrid[tRKey] = tRVal;
                 }
-             }
-             return ansCopy;
-           }));
+                ansCopy.answer_value = tGrid;
+              } else if (qDef) {
+                const choiceTypes = ['multiple_choice', 'checkboxes', 'dropdown', 'radio', 'linear_scale'];
+                if (choiceTypes.includes(qDef.type)) {
+                  if (Array.isArray(ansCopy.answer_value)) {
+                    ansCopy.answer_value = await Promise.all(ansCopy.answer_value.map(async v => {
+                      if (typeof v === 'string' && v.includes(' : ')) {
+                        const parts = v.split(' : ');
+                        return `${await translateTextSmart(parts[0])} : ${parts[1]}`;
+                      }
+                      return typeof v === 'string' ? await translateTextSmart(v) : v;
+                    }));
+                  } else if (typeof ansCopy.answer_value === 'string') {
+                    if (ansCopy.answer_value.includes(' : ')) {
+                      const parts = ansCopy.answer_value.split(' : ');
+                      ansCopy.answer_value = `${await translateTextSmart(parts[0])} : ${parts[1]}`;
+                    } else {
+                      ansCopy.answer_value = await translateTextSmart(ansCopy.answer_value);
+                    }
+                  }
+                }
+              }
+            }
+            return ansCopy;
+          }));
         } else {
-           tAnswers[idStr] = answers;
+          tAnswers[idStr] = answers;
         }
       }
 
@@ -587,15 +587,15 @@ export default function HistoryResult() {
           </div>
         </div>
 
-       {/* แบนเนอร์แนะนำดาวน์โหลดแอป */}
+        {/* แบนเนอร์แนะนำดาวน์โหลดแอป */}
         <div className="hr-suth-promo-banner">
           {/* ฝั่งซ้าย */}
           <div className="promo-left">
             <img src="/sutapp/phone.png" alt="SUTH App Phone" className="promo-phone-img" />
             <div className="promo-text-content">
-            <h2>{t('history.result.download_app_title')} <span className="highlight-orange">SUTH App</span></h2>
-            <p className="promo-desc">{t('history.result.download_app_desc')}</p>
-          </div>
+              <h2>{t('history.result.download_app_title')} <span className="highlight-orange">SUTH App</span></h2>
+              <p className="promo-desc">{t('history.result.download_app_desc')}</p>
+            </div>
           </div>
 
           <div className="promo-divider"></div>
@@ -609,7 +609,7 @@ export default function HistoryResult() {
               </div>
             </div>
             <button className="download-btn" onClick={() => window.open("https://play.google.com/store/apps/details?id=th.go.suth.app", "_blank")}>
-             <FiDownload style={{ marginRight: '8px' }} /> {t('history.result.download_now')}
+              <FiDownload style={{ marginRight: '8px' }} /> {t('history.result.download_now')}
             </button>
           </div>
         </div>
@@ -651,6 +651,12 @@ export default function HistoryResult() {
                           identity,
                           masterCase: mc,
                           clinicType: actualClinicType,
+
+                          bmiRecords,
+                          adviceByClinic,
+                          timelineEvents,
+                          responses: translatedData,
+                          logs: translatedLogs,
                         },
                       });
                     }}
@@ -705,6 +711,12 @@ export default function HistoryResult() {
                               identity,
                               masterCase: mc,
                               clinicType: actualClinicType,
+
+                              bmiRecords,
+                              adviceByClinic,
+                              timelineEvents,
+                              responses: translatedData,
+                              logs: translatedLogs,
                             },
                           });
                         }}
@@ -873,8 +885,8 @@ export default function HistoryResult() {
             }).map(ans => ans.question_id || stripHtml(ans.question_title || ''));
 
             const editableQuestions = allAnswers.filter((ans, i) => {
-               const idOrTitle = ans.question_id || stripHtml((origAllAnswers[i] && origAllAnswers[i].question_title) || '');
-               return editableQuestionIds.includes(idOrTitle);
+              const idOrTitle = ans.question_id || stripHtml((origAllAnswers[i] && origAllAnswers[i].question_title) || '');
+              return editableQuestionIds.includes(idOrTitle);
             });
 
             return (
