@@ -23,7 +23,7 @@ router.get('/categories/:clinic_id', async (req, res) => {
     const { clinic_id } = req.params;
     try {
         const query = `SELECT * FROM faq_categories WHERE clinic_id = ? ORDER BY display_order ASC`;
-       const [rows] = await db.query(query, [clinic_id]);
+        const [rows] = await db.query(query, [clinic_id]);
         res.json({ success: true, data: rows });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -50,7 +50,7 @@ router.patch('/categories/:id', async (req, res) => {
     }
 });
 
-// 4. DELETE: สำหรับลบหมวดหมู่ย่อยออกจากระบบ (🌟 เปลี่ยนเป็น db.query)
+// 4. DELETE: สำหรับลบหมวดหมู่ย่อยออกจากระบบ
 router.delete('/categories/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -65,10 +65,9 @@ router.delete('/categories/:id', async (req, res) => {
 
 // ==========================================
 // SECTION 2: จัดการข้อคำถามและคำตอบ (FAQ Contents)
-// Path จริงที่เกิดจากการรวมกับ index.js คือ /api/admin/help-center/faqs
 // ==========================================
 
-// 5. GET: ดึงข้อคำถามทั้งหมดโชว์บนตาราง Admin (🌟 เปลี่ยนเป็น db.query เพื่อรองรับระบบค้นหาข้อความ HTML)
+// 5. GET: ดึงข้อคำถามทั้งหมดโชว์บนตาราง Admin 
 router.get('/faqs', async (req, res) => {
     try {
         const { clinic_id, status, search } = req.query;
@@ -82,20 +81,31 @@ router.get('/faqs', async (req, res) => {
                 f.status,
                 f.display_order,
                 f.updated_at,
+                f.clinic_id,
+                f.category_id,
                 cat.category_name,
                 c.name AS clinic_name
             FROM faqs f
-            JOIN faq_categories cat ON f.category_id = cat.id
-            JOIN clinics c ON cat.clinic_id = c.id
+            LEFT JOIN faq_categories cat ON f.category_id = cat.id
+            LEFT JOIN clinics c ON f.clinic_id = c.id
             WHERE 1=1
         `;
         const params = [];
 
-        if (clinic_id) { query += ` AND cat.clinic_id = ?`; params.push(clinic_id); }
-        if (status) { query += ` AND f.status = ?`; params.push(status); }
-        if (search) { query += ` AND f.question LIKE ?`; params.push(`%${search}%`); }
+        if (clinic_id) { 
+            query += ` AND f.clinic_id = ?`; 
+            params.push(clinic_id); 
+        }
+        if (status) { 
+            query += ` AND f.status = ?`; 
+            params.push(status); 
+        }
+        if (search) { 
+            query += ` AND f.question LIKE ?`; 
+            params.push(`%${search}%`); 
+        }
 
-        query += ` ORDER BY c.id ASC, f.display_order ASC`;
+        query += ` ORDER BY COALESCE(f.clinic_id, 0) ASC, f.display_order ASC`;
         
         const [rows] = await db.query(query, params);
         res.json({ success: true, data: rows });
@@ -106,12 +116,11 @@ router.get('/faqs', async (req, res) => {
 
 // 6. POST: เพิ่มข้อคำถามใหม่
 router.post('/faqs', async (req, res) => {
-    // แกะตัวแปรจากหน้าบ้านออกมา
-    const { category_id, question, answer, is_homepage, status, display_order } = req.body;
+    const { category_id, clinic_id, question, answer, is_homepage, status, display_order } = req.body;
     
     try {
-        // เคลียร์ค่าประเภทตัวแปรให้ตรงตามฟิลด์ตาราง SQL ก่อนนำไปประมวลผล
         const finalCategoryId = parseInt(category_id) || null;
+        const finalClinicId = parseInt(clinic_id) || null;
         const finalQuestion = question ? question.trim() : '';
         const finalAnswer = answer ? answer.trim() : ''; 
         const finalIsHomepage = (is_homepage === 1 || is_homepage === true) ? 1 : 0;
@@ -119,12 +128,13 @@ router.post('/faqs', async (req, res) => {
         const finalDisplayOrder = parseInt(display_order) || 0;
 
         const query = `
-            INSERT INTO faqs (category_id, question, answer, is_homepage, status, display_order) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO faqs (category_id, clinic_id, question, answer, is_homepage, status, display_order) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
         
         const [result] = await db.query(query, [
             finalCategoryId, 
+            finalClinicId, 
             finalQuestion, 
             finalAnswer, 
             finalIsHomepage, 
@@ -138,18 +148,22 @@ router.post('/faqs', async (req, res) => {
     }
 });
 
-// 7. PUT: แก้ไขข้อมูลข้อคำถาม (ใช้ db.query อยู่แล้วถูกต้องแล้วครับ)
+// 7. PUT: แก้ไขข้อมูลข้อคำถาม (🟢 ลบตัวสัญลักษณ์คอมมาค้างจุดที่ทำให้ระบบดับเรียบร้อยค่ะ)
 router.put('/faqs/:id', async (req, res) => {
     const { id } = req.params;
-    const { category_id, question, answer, is_homepage, status, display_order } = req.body;
+    const { category_id, clinic_id, question, answer, is_homepage, status, display_order } = req.body;
     try {
+        const finalCategoryId = parseInt(category_id) || null;
+        const finalClinicId = parseInt(clinic_id) || null;
+
         const query = `
             UPDATE faqs 
-            SET category_id = ?, question = ?, answer = ?, is_homepage = ?, status = ?, display_order = ? 
+            SET category_id = ?, clinic_id = ?, question = ?, answer = ?, is_homepage = ?, status = ?, display_order = ? 
             WHERE id = ?
         `;
         await db.query(query, [
-            category_id, 
+            finalCategoryId, 
+            finalClinicId,
             question, 
             answer, 
             is_homepage ? 1 : 0, 
@@ -164,7 +178,7 @@ router.put('/faqs/:id', async (req, res) => {
     }
 });
 
-// 8. DELETE: ลบข้อคำถามออกจากระบบ (🌟 เปลี่ยนเป็น db.query)
+// 8. DELETE: ลบข้อคำถามออกจากระบบ
 router.delete('/faqs/:id', async (req, res) => {
     const { id } = req.params;
     try {
