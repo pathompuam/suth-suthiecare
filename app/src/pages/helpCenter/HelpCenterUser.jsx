@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiChevronRight, FiChevronDown, FiMessageCircle, FiGrid } from 'react-icons/fi';
 import { getActiveClinics, getFaqsAdmin } from '../../services/api';
@@ -8,51 +8,82 @@ import Navbar from '../../components/Navbar';
 export default function HelpCenterUser() {
     const navigate = useNavigate();
     const scrollRef = React.useRef(null);
+    const searchContainerRef = useRef(null);
+
     const [clinics, setClinics] = useState([]);
     const [commonFaqs, setCommonFaqs] = useState([]);
+    const [allFaqs, setAllFaqs] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [openFaqIndex, setOpenFaqIndex] = useState(null);
+    const [searchResults, setSearchResults] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [isAllClinicsExpanded, setIsAllClinicsExpanded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         fetchData();
+        const handleClickOutside = (event) => {
+            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const fetchData = async () => {
-        try {
-            const cachedClinics = localStorage.getItem('suth_clinics');
-            const cachedFaqs = localStorage.getItem('suth_homepage_faqs');
-
-            if (cachedClinics && cachedFaqs) {
-                setClinics(JSON.parse(cachedClinics));
-                setCommonFaqs(JSON.parse(cachedFaqs));
-                setIsLoading(false);
-            } else {
-                setIsLoading(true);
-            }
-
-            const [resClinic, resFaq] = await Promise.all([
-                getActiveClinics(),
-                getFaqsAdmin({ is_homepage: 1 })
-            ]);
-
-            const freshClinics = resClinic.data?.data || [];
-            const freshFaqs = (resFaq.data?.data || [])
-                .filter(faq => faq.is_homepage === 1)
-                .sort((a, b) => (parseInt(a.display_order) || 0) - (parseInt(b.display_order) || 0));
-
-            setClinics(freshClinics);
-            setCommonFaqs(freshFaqs);
-            localStorage.setItem('suth_clinics', JSON.stringify(freshClinics));
-            localStorage.setItem('suth_homepage_faqs', JSON.stringify(freshFaqs));
-
-        } catch (err) {
-            console.error("Error fetching user help center data:", err);
-        } finally {
-            setIsLoading(false);
+    useEffect(() => {
+        if (searchQuery.trim() === '') {
+            setSearchResults([]);
+            setShowSuggestions(false);
+            return;
         }
-    };
+
+        const filtered = allFaqs.filter(faq =>
+            faq.question.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setSearchResults(filtered);
+        setShowSuggestions(true);
+    }, [searchQuery, allFaqs]);
+
+    const fetchData = async () => {
+    try {
+        const cachedClinics = localStorage.getItem('suth_clinics');
+        const cachedFaqs = localStorage.getItem('suth_homepage_faqs');
+        const cachedAllFaqs = localStorage.getItem('suth_all_faqs_search'); 
+        if (cachedClinics && cachedFaqs && cachedAllFaqs) {
+            setClinics(JSON.parse(cachedClinics));
+            setCommonFaqs(JSON.parse(cachedFaqs));
+            setAllFaqs(JSON.parse(cachedAllFaqs)); 
+            setIsLoading(false);
+        } else {
+            setIsLoading(true);
+        }
+
+        const [resClinic, resFaqAdmin] = await Promise.all([
+            getActiveClinics(),
+            getFaqsAdmin({})
+        ]);
+
+        const freshClinics = resClinic.data?.data || [];
+        const freshAllFaqs = resFaqAdmin.data?.data || [];
+
+        const freshHomepageFaqs = freshAllFaqs
+            .filter(faq => faq.is_homepage === 1)
+            .sort((a, b) => (parseInt(a.display_order) || 0) - (parseInt(b.display_order) || 0));
+
+        setClinics(freshClinics);
+        setAllFaqs(freshAllFaqs);
+        setCommonFaqs(freshHomepageFaqs);
+
+        localStorage.setItem('suth_clinics', JSON.stringify(freshClinics));
+        localStorage.setItem('suth_homepage_faqs', JSON.stringify(freshHomepageFaqs));
+        localStorage.setItem('suth_all_faqs_search', JSON.stringify(freshAllFaqs)); 
+
+    } catch (err) {
+        console.error("Error fetching user help center data:", err);
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     // ฟังก์ชันควบคุมการเลื่อนสไลด์เมื่อคลิกปุ่มลูกศร
     const handleScroll = (direction) => {
@@ -63,6 +94,19 @@ export default function HelpCenterUser() {
                 left: scrollLeft + scrollAmount,
                 behavior: 'smooth'
             });
+        }
+    };
+
+    // 🟢 ฟังก์ชันทางลัดเมื่อกดเลือกข้อคำถามจากการค้นหา ยิงประวัติพาข้ามหน้าทันที
+    const handleSelectFaqShortcut = (faq) => {
+        setShowSuggestions(false);
+        setSearchQuery('');
+        if (faq.clinic_id) {
+            navigate(`/help-center/clinic/${faq.clinic_id}`, {
+                state: { autoSelectFaqId: faq.faq_id }
+            });
+        } else {
+            navigate('/help-center');
         }
     };
 
@@ -78,16 +122,47 @@ export default function HelpCenterUser() {
                 <div className="hc-user-container">
 
                     <h1>ศูนย์ช่วยเหลือ SUTHieCare</h1>
-                    <p>ค้นหาคำถามที่คุณต้องการเกี่ยวกับระบบ แนะนำการใช้งาน และรายการตอบข้อคำถามต่างๆ ที่พบบ่อย</p>
+                    <p>ค้นหาคำถามที่คุณต้องการ</p>
 
-                    <div className="hc-user-search-wrapper">
-                        <FiSearch className="search-icon" />
-                        <input
-                            type="text"
-                            placeholder="ค้นหาคำถาม"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                    <div
+                        className="hc-search-absolute-container"
+                        ref={searchContainerRef}
+                        style={{ position: 'relative', maxWidth: '620px', margin: '0 auto' }}
+                    >
+                        {/* ตัวกล่องอินพุตพิมพ์ค้นหาหลัก */}
+                        <div className={`hc-user-search-wrapper ${showSuggestions && searchResults.length > 0 ? 'has-suggestions' : ''}`}>
+                            <FiSearch className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="พิมพ์ข้อคำถามที่ต้องการค้นหา..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => searchQuery.trim() !== '' && setShowSuggestions(true)}
+                            />
+                        </div>
+
+                        {/* แผง Dropdown แนะนำรายการคำถาม */}
+                        {showSuggestions && (
+                            <div className="hc-search-suggestions-dropdown">
+                                {searchResults.length > 0 ? (
+                                    searchResults.map((faq) => (
+                                        <div
+                                            key={faq.faq_id}
+                                            className="hc-suggestion-item"
+                                            onClick={() => handleSelectFaqShortcut(faq)}
+                                        >
+                                            <div className="hc-suggestion-info">
+                                                <small className="hc-suggestion-clinic-tag">{faq.clinic_name || 'ศูนย์ทั่วไป'}</small>
+                                                <span className="hc-suggestion-text">{faq.question}</span>
+                                            </div>
+                                            <FiChevronRight className="hc-suggestion-arrow" />
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="hc-suggestion-empty">ไม่พบข้อคำถามที่ตรงกับ "{searchQuery}"</div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
@@ -211,7 +286,7 @@ export default function HelpCenterUser() {
                                                         state: { autoSelectFaqId: faq.faq_id }
                                                     });
                                                 } else {
-                                                    
+
                                                     navigate('/help-center');
                                                 }
                                             }}
@@ -220,7 +295,7 @@ export default function HelpCenterUser() {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                 <span style={{ fontWeight: '500' }}>{faq.question}</span>
                                             </div>
-                                            <FiChevronRight style={{ color: '#94a3b8' }} /> 
+                                            <FiChevronRight style={{ color: '#94a3b8' }} />
                                         </div>
                                     </div>
                                 ))}

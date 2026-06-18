@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     FiSearch, FiChevronDown, FiMessageCircle, FiHeart, FiFileText
@@ -20,6 +20,8 @@ export default function ClinicHelpDetail() {
 
     const [openCategoryIds, setOpenCategoryIds] = useState([]);
     const [selectedFaq, setSelectedFaq] = useState(null);
+
+    const answerRef = useRef(null);
 
     useEffect(() => {
         const fetchClinicAndFaqs = async () => {
@@ -82,6 +84,16 @@ export default function ClinicHelpDetail() {
         setClinicSearchQuery('');
     }, [id]);
 
+    // 🟢  เมื่อคำถาม (selectedFaq) เปลี่ยนแปลง ให้หน้าจอเลื่อนดิ่งลงไปหาคำตอบทันที
+    useEffect(() => {
+        if (selectedFaq && answerRef.current) {
+            answerRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            });
+        }
+    }, [selectedFaq]);
+
     // ฟังก์ชันช่วยเลือกคำถามแรกมาโชว์ที่หน้าจอฝั่งขวาอัตโนมัติ 
     const setDefaultSelection = (cats, faqs, clinicName) => {
         if (!faqs || faqs.length === 0) return;
@@ -92,12 +104,12 @@ export default function ClinicHelpDetail() {
         ).sort((a, b) => (parseInt(a.display_order) || 0) - (parseInt(b.display_order) || 0));
 
         if (clinicQuestions.length > 0) {
-            
+
             const shortcutFaqId = location.state?.autoSelectFaqId;
             const matchedShortcutFaq = clinicQuestions.find(f => Number(f.faq_id) === Number(shortcutFaqId));
 
             if (matchedShortcutFaq) {
-                
+
                 setSelectedFaq(matchedShortcutFaq);
 
                 if (matchedShortcutFaq.category_id && cats.length > 0) {
@@ -105,7 +117,7 @@ export default function ClinicHelpDetail() {
                     if (matchedCat) setOpenCategoryIds([matchedCat.id]);
                 }
             } else if (!selectedFaq) {
-                
+
                 setSelectedFaq(clinicQuestions[0]);
                 if (clinicQuestions[0].category_id && cats.length > 0) {
                     const matchedCat = cats.find(c => Number(c.id) === Number(clinicQuestions[0].category_id));
@@ -149,23 +161,26 @@ export default function ClinicHelpDetail() {
 
     return (
         <div className="hc-clinic-detail-wrapper">
-            <Navbar showBack={true} backText="กลับหน้าหลัก" />
+            <Navbar showBack={true} backText="กลับหน้าหลักศูนย์ช่วยเหลือ" />
 
             {/* ── HERO BANNER ── */}
-            <header
-                className="hc-clinic-detail-hero"
-                style={{
-                    backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.75)), url(${selectedClinic.bg || selectedClinic.image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                }}
-            >
+            <header className="hc-clinic-detail-hero">
                 <div className="hc-user-container hc-clinic-hero-inner">
-                    <div className="hc-clinic-badge-label">
-                        <FiHeart className="mini-heart" /> {selectedClinic.name}
+
+                    {/* กรอบโลโก้คลินิกขนาดลงตัว */}
+                    <div className="hc-clinic-logo-frame">
+                        <img src={selectedClinic.image} alt={selectedClinic.name} />
                     </div>
-                    <h1>{selectedClinic.name}</h1>
-                    <p>คำแนะนำและคำถามที่พบบ่อยเกี่ยวกับสุขภาพกายและสุขภาพใจของ{selectedClinic.name}</p>
+
+                    {/* บล็อกข้อความชิดซ้ายพร้อมป้ายส้มระบบ */}
+                    <div className="hc-clinic-text-block">
+                        <div className="hc-clinic-badge-label">
+                            <FiHeart className="mini-heart" /> ศูนย์ช่วยเหลือ
+                        </div>
+                        <h1>{selectedClinic.name}</h1>
+                        <p>คำแนะนำและคำถามที่พบบ่อยเกี่ยวกับ{selectedClinic.name}</p>
+                    </div>
+
                 </div>
             </header>
 
@@ -262,7 +277,7 @@ export default function ClinicHelpDetail() {
                 {/* 🎯 [ฝั่งขวา]: แผงกระดานคอนเทนต์ */}
                 <div className="hc-clinic-main-content-pane">
                     {selectedFaq ? (
-                        <div className="hc-answer-display-card">
+                        <div className="hc-answer-display-card" ref={answerRef}>
                             <div className="hc-answer-header-zone">
                                 <span className="hc-answer-tag-category">
                                     {(() => {
