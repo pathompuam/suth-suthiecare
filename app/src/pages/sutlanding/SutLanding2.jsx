@@ -259,7 +259,7 @@ export default function SutLanding2() {
         </div>
         <div className="sut2-nav__menu-btn" onClick={() => setMenuOpen(!menuOpen)}>☰</div>
         <div className={`sut2-nav__actions ${menuOpen ? "sut2-open" : ""}`}>
-          <LanguageSwitcher />
+          <LanguageSwitcher darkText={isScrolled || menuOpen} />
           <button className="sut2-nav__btn sut2-nav__btn--history" onClick={() => navigate("/history")}>
             <FiClock /> <span>{t('nav.history')}</span>
           </button>
