@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   FaCalendarAlt, FaPhoneAlt, FaIdCard, FaRegCircle, FaRegCheckSquare, 
-  FaTimes, FaImage, FaChartBar, FaPlus, FaLayerGroup, FaTable, FaFont 
+  FaTimes, FaImage, FaChartBar, FaPlus, FaLayerGroup, FaTable, FaFont, FaCloudUploadAlt 
 } from 'react-icons/fa';
 import RichTextInput from './RichTextInput';
 
@@ -188,6 +188,12 @@ const QuestionBody = ({ q, editingCell, setEditingCell, handlers, isActive = tru
 
   // 🟢 2. UI พรีวิวสำหรับคำถามประเภทอื่นๆ
   if (q.type === 'description') return null;
+  if (q.type === 'file_upload') return (
+    <div className="sfb-dummy-input sfb-text-underlined" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#5f6368' }}>
+      <FaCloudUploadAlt size={20} />
+      <span>ผู้ตอบสามารถอัปโหลดไฟล์รูปภาพหรือเสียงได้ที่นี่</span>
+    </div>
+  );
   if (q.type === 'short_text' || q.type === 'full_name') return <div className="sfb-dummy-input sfb-text-underlined">ข้อความคำตอบสั้นๆ</div>;
   if (q.type === 'paragraph' || q.type === 'main_issue') return <div className="sfb-dummy-input sfb-text-underlined" style={{ width: '80%' }}>ข้อความคำตอบแบบยาว</div>;
   if (q.type === 'date') return <div className="sfb-dummy-input sfb-text-underlined sfb-dummy-date"><span>เดือน วัน ปี</span><FaCalendarAlt className="sfb-dummy-date-icon" /></div>;

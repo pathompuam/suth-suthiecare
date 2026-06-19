@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FiRefreshCw, FiCheck, FiXCircle } from 'react-icons/fi';
 import { formatThaiID, validateThaiID, formatPhoneNumber } from './formUtils';
 import { translateTextSmart } from '../../../utils/translator';
+import Swal from 'sweetalert2';
 
 const QuestionRenderer = ({
   q,
@@ -92,6 +93,8 @@ const QuestionRenderer = ({
     }
   } else if (q.type === 'bmi') {
     hasAnswer = ans && (ans.weight || ans.height);
+  } else if (q.type === 'file_upload') {
+    hasAnswer = ans && ans.data;
   } else {
     hasAnswer = !!ans && String(ans).trim() !== '';
   }
@@ -144,6 +147,62 @@ const QuestionRenderer = ({
             </div>
           );
         })()}
+
+        {q.type === 'file_upload' && (
+          <div className="preview-file-upload-wrapper">
+            <input 
+              type="file" 
+              accept="image/*,audio/*" 
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  const isAudio = file.type.startsWith('audio/');
+                  const maxSize = isAudio ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+                  const maxSizeLabel = isAudio ? '10 MB' : '5 MB';
+
+                  if (file.size > maxSize) {
+                    Swal.fire({
+                      icon: 'warning',
+                      title: 'ไฟล์ขนาดใหญ่เกินไป',
+                      text: `กรุณาอัปโหลดไฟล์ที่มีขนาดไม่เกิน ${maxSizeLabel}`,
+                      confirmButtonColor: 'var(--theme-color)'
+                    });
+                    e.target.value = ''; // Reset input
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    handleAnswer(q.id, {
+                      name: file.name,
+                      type: file.type,
+                      data: reader.result
+                    });
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }} 
+              style={{ marginBottom: '10px' }}
+            />
+            {ans && ans.data && (
+              <div className="preview-file-display" style={{ marginTop: '10px' }}>
+                {ans.type.startsWith('image/') ? (
+                  <img src={ans.data} alt="uploaded" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
+                ) : ans.type.startsWith('audio/') ? (
+                  <audio controls src={ans.data} style={{ width: '100%' }} />
+                ) : (
+                  <div>ไฟล์ที่อัปโหลด: {ans.name}</div>
+                )}
+                <button 
+                  type="button"
+                  onClick={() => handleAnswer(q.id, null)}
+                  style={{ display: 'block', marginTop: '10px', padding: '6px 12px', background: '#f44336', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  <FiXCircle style={{ verticalAlign: 'middle', marginRight: '4px' }}/> ลบไฟล์
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {(q.type === 'short_text' || q.type === 'full_name') && (
           <input type="text" className={`preview-input ${hasError ? 'preview-input--error' : ''}`} placeholder="คำตอบของคุณ" value={ans || ''} onChange={(e) => handleAnswer(q.id, e.target.value)} />

@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "./ClinicDetail.css";
 import {
   FiArrowLeft,
@@ -13,6 +14,7 @@ import {
 export default function ClinicDetail() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
 
   const {
     clinicType,
@@ -55,21 +57,34 @@ export default function ClinicDetail() {
   console.log("graphData", graphData);
   console.log("clinicBMI", clinicBMI);
   const clinicNameMap = {
-    behavior: "คลินิกปรับเปลี่ยนพฤติกรรม",
-    sti: "คลินิกโรคติดต่อฯ",
-    teenager: "คลินิกวัยรุ่น",
+    en: {
+      behavior: "Behavioral Clinic",
+      sti: "STI Clinic",
+      teenager: "Teen Clinic",
+    },
+    th: {
+      behavior: "คลินิกปรับเปลี่ยนพฤติกรรม",
+      sti: "คลินิกโรคติดต่อฯ",
+      teenager: "คลินิกวัยรุ่น",
+    }
   };
 
   const clinicDescriptionMap = {
-    behavior: "ปรับพฤติกรรมเพื่อสุขภาพที่ดีขึ้น",
-    sti: "ป้องกัน ดูแล และเฝ้าระวังโรคติดต่อ",
-    teenager: "ดูแล เข้าใจ ปรับเปลี่ยน เพื่อวัยรุ่นที่แข็งแรงทั้งใจ",
+    en: {
+      behavior: "Behavior modification for better health",
+      sti: "Prevention, care and monitoring of communicable diseases",
+      teenager: "Care, understand and adapt for healthy teenagers",
+    },
+    th: {
+      behavior: "ปรับพฤติกรรมเพื่อสุขภาพที่ดีขึ้น",
+      sti: "ป้องกัน ดูแล และเฝ้าระวังโรคติดต่อ",
+      teenager: "ดูแล เข้าใจ ปรับเปลี่ยน เพื่อวัยรุ่นที่แข็งแรงทั้งใจ",
+    }
   };
 
-  const clinicDescription =
-    clinicDescriptionMap[clinicType] || "ดูแลสุขภาพอย่างครบวงจร";
-
-  const clinicName = clinicNameMap[clinicType] || clinicType;
+  const currentLang = i18n.language === 'en' ? 'en' : 'th';
+  const clinicDescription = clinicDescriptionMap[currentLang][clinicType] || (currentLang === 'en' ? "Comprehensive health care" : "ดูแลสุขภาพอย่างครบวงจร");
+  const clinicName = clinicNameMap[currentLang][clinicType] || clinicType;
   console.log("clinicType", clinicType);
   console.log("clinicBMI", clinicBMI);
   console.log("clinicTimeline", clinicTimeline);
@@ -92,27 +107,27 @@ export default function ClinicDetail() {
 
   const trendText =
     diff < 0
-      ? "แนวโน้มสุขภาพดีขึ้น"
+      ? (currentLang === 'en' ? "Improving Health Trend" : "แนวโน้มสุขภาพดีขึ้น")
       : diff > 0
-        ? "มีความเสี่ยงเพิ่มขึ้น"
-        : "ไม่มีการเปลี่ยนแปลง";
+        ? (currentLang === 'en' ? "Increased Risk" : "มีความเสี่ยงเพิ่มขึ้น")
+        : (currentLang === 'en' ? "No Change" : "ไม่มีการเปลี่ยนแปลง");
 
   const latestLabel =
     clinicType === "behavior"
       ? latestValue < 18.5
-        ? "น้ำหนักน้อย"
+        ? (currentLang === 'en' ? "Underweight" : "น้ำหนักน้อย")
         : latestValue < 23
-          ? "ปกติ"
+          ? (currentLang === 'en' ? "Normal" : "ปกติ")
           : latestValue < 25
-            ? "น้ำหนักเกิน"
-            : "อ้วน"
+            ? (currentLang === 'en' ? "Overweight" : "น้ำหนักเกิน")
+            : (currentLang === 'en' ? "Obese" : "อ้วน")
       : latestRecord?.label || "-";
 
   return (
     <div className="clinic-detail-page">
       <button className="clinic-back-btn" onClick={() => navigate(-1)}>
         <FiArrowLeft />
-        <span>ย้อนกลับ</span>
+        <span>{t('history.result.back') || (currentLang === 'en' ? 'Back' : 'ย้อนกลับ')}</span>
       </button>
 
       {/* HERO */}
@@ -123,8 +138,8 @@ export default function ClinicDetail() {
           <div className="hero-health-status">
             <div className="hero-main-value">
               {clinicType === "behavior"
-                ? `BMI ปัจจุบัน ${latestValue || "-"}`
-                : `คะแนนล่าสุด ${latestValue || "-"}`}
+                ? `${currentLang === 'en' ? 'Current BMI' : 'BMI ปัจจุบัน'} ${latestValue || "-"}`
+                : `${currentLang === 'en' ? 'Latest Score' : 'คะแนนล่าสุด'} ${latestValue || "-"}`}
 
               <span>({latestLabel})</span>
             </div>
@@ -146,11 +161,11 @@ export default function ClinicDetail() {
             <div>
               <h3>
                 {clinicType === "behavior"
-                  ? "แนวโน้ม BMI"
-                  : "แนวโน้มคะแนนความเสี่ยง"}
+                  ? (currentLang === 'en' ? "BMI Trend" : "แนวโน้ม BMI")
+                  : (currentLang === 'en' ? "Risk Score Trend" : "แนวโน้มคะแนนความเสี่ยง")}
               </h3>
 
-              <span>ข้อมูลย้อนหลังทั้งหมด</span>
+              <span>{currentLang === 'en' ? "All Historical Data" : "ข้อมูลย้อนหลังทั้งหมด"}</span>
             </div>
           </div>
 
@@ -216,22 +231,21 @@ export default function ClinicDetail() {
             </div>
 
             <div>
-              <h3>คำแนะนำจากผู้เชี่ยวชาญ</h3>
+              <h3>{currentLang === 'en' ? "Expert Advice" : "คำแนะนำจากผู้เชี่ยวชาญ"}</h3>
               <span>{clinicName}</span>
             </div>
           </div>
 
-          {/* CONTENT */}
           <div className="advice-box">
             <div className="advice-header">
               <FiShield />
-              <span>ข้อเสนอแนะด้านสุขภาพ</span>
+              <span>{currentLang === 'en' ? "Health Recommendations" : "ข้อเสนอแนะด้านสุขภาพ"}</span>
             </div>
 
             <p>
               {advice?.detail?.trim()
                 ? advice.detail
-                : "ยังไม่มีคำแนะนำจากผู้เชี่ยวชาญในขณะนี้ กรุณาติดตามผลครั้งถัดไป"}
+                : (currentLang === 'en' ? "No expert advice available at the moment. Please check back later." : "ยังไม่มีคำแนะนำจากผู้เชี่ยวชาญในขณะนี้ กรุณาติดตามผลครั้งถัดไป")}
             </p>
           </div>
 
@@ -244,10 +258,10 @@ export default function ClinicDetail() {
         <div className="timeline-header">
           <div className="section-title">
             <FiCalendar />
-            <span>ประวัติการเข้ารับบริการ</span>
+            <span>{currentLang === 'en' ? "Service History" : "ประวัติการเข้ารับบริการ"}</span>
           </div>
 
-          <span className="timeline-count">{clinicTimeline.length} รายการ</span>
+          <span className="timeline-count">{clinicTimeline.length} {currentLang === 'en' ? "records" : "รายการ"}</span>
         </div>
 
         {clinicTimeline.length > 0 ? (
@@ -269,11 +283,11 @@ export default function ClinicDetail() {
                 </div>
               </div>
 
-              <button className="timeline-btn">ดูเพิ่มเติม</button>
+              <button className="timeline-btn">{currentLang === 'en' ? "View More" : "ดูเพิ่มเติม"}</button>
             </div>
           ))
         ) : (
-          <div className="empty-timeline">ไม่มีประวัติการเข้ารับบริการ</div>
+          <div className="empty-timeline">{currentLang === 'en' ? "No service history" : "ไม่มีประวัติการเข้ารับบริการ"}</div>
         )}
       </div>
     </div>

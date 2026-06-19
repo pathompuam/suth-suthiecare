@@ -357,6 +357,8 @@ const FormView = () => {
             }).length;
             hasAnswer = answeredRowsCount > 0;
           }
+        } else if (q.type === "file_upload") {
+          hasAnswer = ans && ans.data;
         } else {
           hasAnswer = !!ans && String(ans).trim() !== "";
         }
@@ -459,6 +461,8 @@ const FormView = () => {
           if (w > 0 && hCm > 0)
             calcBmi = Number((w / Math.pow(hCm / 100, 2)).toFixed(2));
           textVal = `น้ำหนัก ${w} กก., ส่วนสูง ${hCm} ซม. (BMI: ${calcBmi})`;
+        } else if (q.type === "file_upload") {
+          textVal = mergedAnswers[q.id] ? `ไฟล์: ${mergedAnswers[q.id].name}` : "";
         } else {
           const currentMergedAns = mergedAnswers[q.id];
           textVal = Array.isArray(currentMergedAns)
@@ -607,6 +611,8 @@ const FormView = () => {
             });
           }
           rawAnswersToSave[qTitle] = formattedGrid;
+        } else if (qDef && qDef.type === "file_upload") {
+          rawAnswersToSave[qTitle] = mergedAnswers[key] ? `ไฟล์: ${mergedAnswers[key].name}` : "-";
         } else {
           rawAnswersToSave[qTitle] = Array.isArray(mergedAnswers[key])
             ? mergedAnswers[key].join(", ")
