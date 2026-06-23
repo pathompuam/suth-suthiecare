@@ -93,16 +93,18 @@ router.post('/login', loginLimiter, async (req, res) => {
       });
     }
 
-    // 5. 🟢 ตรวจ Password (รองรับ Bcrypt แบบ 100% และ Plain Text สำรอง)
+    // 5. 🟢 ตรวจ Password (อนุญาตเฉพาะรหัสที่ Hash ด้วย Bcrypt เท่านั้น)
     let isMatch = false;
-    
+
     // เช็คว่ารหัสใน DB ถูก Hash มาด้วย Bcrypt หรือไม่ (Bcrypt จะขึ้นต้นด้วย $2a$, $2b$ หรือ $2y$)
     if (user.password && user.password.startsWith('$2')) {
       // ใช้ bcrypt.compare เปรียบเทียบรหัสที่พิมพ์มา กับ รหัสใน DB
       isMatch = await bcrypt.compare(password, user.password);
     } else {
-      // สำรองกรณีฉุกเฉิน (ถ้ามีรหัสเก่าๆ ที่เป็น Plain Text หลุดอยู่ใน DB)
-      isMatch = (password === user.password);
+      // ❌ ไม่รองรับรหัสผ่านแบบ Plain Text อีกต่อไป (ความปลอดภัย)
+      // หากเจอรหัสเก่าที่ยังไม่ถูก Hash ให้ถือว่าล็อกอินไม่ผ่าน และต้อง migrate ก่อน
+      console.warn(`Login blocked: user "${user.username}" has a non-bcrypt password. Run migratePasswords.js.`);
+      isMatch = false;
     }
 
     if (!isMatch) {
@@ -112,16 +114,16 @@ router.post('/login', loginLimiter, async (req, res) => {
       });
     }
 
-    // 6. ออก JWT Token (24 ชั่วโมง)
+    // 6. ออก JWT Token (อายุปรับได้ผ่าน .env, ค่าเริ่มต้น 8 ชั่วโมง)
     const token = jwt.sign(
-      { 
-        id      : user.id, 
-        username: user.username, 
-        role    : user.role, 
-        role_id : user.role_id 
+      {
+        id      : user.id,
+        username: user.username,
+        role    : user.role,
+        role_id : user.role_id
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: process.env.JWT_EXPIRES || '8h' }
     );
 
     res.json({

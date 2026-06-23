@@ -64,6 +64,9 @@ function decrypt(encryptedBase64) {
     ]).toString('utf8');
     
   } catch (err) {
+    // 🟢 คง behavior เดิม (คืนค่าเดิม) เพื่อไม่ให้ข้อมูล legacy ที่ไม่ได้เข้ารหัสพัง
+    // แต่เพิ่ม log แบบไม่เปิดเผยข้อมูล (ไม่ log ตัว ciphertext/plaintext) เพื่อให้เห็นว่ามีปัญหา
+    console.warn(`⚠️ decrypt failed (${err.name}); returning value as-is. len=${encryptedBase64.length}`);
     return encryptedBase64;
   }
 }

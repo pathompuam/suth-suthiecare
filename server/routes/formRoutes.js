@@ -5,6 +5,7 @@ const db = require('../config/db');
 const { sendTelegramAlert } = require('../utils/telegram'); 
 // 🟢 นำเข้าระบบเข้ารหัส
 const { encrypt, decrypt, hmacHash } = require('../utils/encryption');
+const { verifyToken } = require('../middleware/authMiddleware');
 const NodeCache = require('node-cache');
 // ตั้งค่าให้จำไว้ 60 วินาที (1 นาที) เพื่อให้หน้าเว็บไม่อืด แต่แอดมินแก้ฟอร์มแล้วยังอัปเดตไวอยู่
 const formCache = new NodeCache({ stdTTL: 60 });
@@ -12,7 +13,7 @@ const formCache = new NodeCache({ stdTTL: 60 });
 const safeDecrypt = (val) => decrypt(val) || val;
 
 // 1. บันทึกฟอร์มใหม่ (🟢 เพิ่ม form_type)
-router.post('/save-form', async (req, res) => {
+router.post('/save-form', verifyToken, async (req, res) => {
   const { title, description, formStepName, theme, questions, status, clinic_type, form_type, publish_start_date, publish_end_date } = req.body;
   try {
     const query = `
@@ -79,7 +80,7 @@ router.get('/forms', async (req, res) => {
 });
 
 // 3. ดึงจำนวนผู้ตอบฟอร์ม
-router.get('/forms/:id/submission-count', async (req, res) => {
+router.get('/forms/:id/submission-count', verifyToken, async (req, res) => {
     try {
         const [rows] = await db.query("SELECT COUNT(*) AS count FROM form_responses WHERE form_id = ?", [req.params.id]);
         res.json({ count: rows[0].count });
@@ -147,12 +148,13 @@ router.get('/forms/:id', async (req, res) => {
 
         res.json(form);
     } catch (err) {
-        res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์", error: err.message });
+        console.error("Error fetching form:", err);
+        res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
     }
 });
 
 // 5. อัปเดตข้อมูลฟอร์มทั้งหมด (🟢 เพิ่ม form_type)
-router.put('/forms/:id', async (req, res) => {
+router.put('/forms/:id', verifyToken, async (req, res) => {
   const formId = req.params.id;
   const { title, description, formStepName, theme, questions, status, clinic_type, form_type, publish_start_date, publish_end_date } = req.body;
   try {
@@ -173,7 +175,7 @@ router.put('/forms/:id', async (req, res) => {
 });
 
 // 6. ลบฟอร์ม
-router.delete('/forms/:id', async (req, res) => {
+router.delete('/forms/:id', verifyToken, async (req, res) => {
     try {
         await db.query("DELETE FROM forms WHERE id = ?", [req.params.id]);
         formCache.flushAll();
@@ -184,7 +186,7 @@ router.delete('/forms/:id', async (req, res) => {
 });
 
 // 7. เปลี่ยนชื่อฟอร์ม
-router.patch('/forms/:id/rename', async (req, res) => {
+router.patch('/forms/:id/rename', verifyToken, async (req, res) => {
     try {
         await db.query("UPDATE forms SET title = ? WHERE id = ?", [req.body.title, req.params.id]);
         res.json({ message: "เปลี่ยนชื่อฟอร์มสำเร็จ!" });
@@ -194,7 +196,7 @@ router.patch('/forms/:id/rename', async (req, res) => {
 });
 
 // 8. เปลี่ยนรูปปกฟอร์ม
-router.patch('/forms/:id/image', async (req, res) => {
+router.patch('/forms/:id/image', verifyToken, async (req, res) => {
     try {
         const formId = req.params.id;
         const [rows] = await db.query("SELECT theme FROM forms WHERE id = ?", [formId]);
@@ -204,12 +206,13 @@ router.patch('/forms/:id/image', async (req, res) => {
         await db.query("UPDATE forms SET theme = ? WHERE id = ?", [JSON.stringify(themeData), formId]);
         res.json({ success: true, message: "อัปเดตรูปปกสำเร็จ!" });
     } catch (err) {
-        res.status(500).json({ message: "Server Error", error: err.message });
+        console.error("Error updating form image:", err);
+        res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
     }
 });
 
 // 9. อัปเดตสถานะของฟอร์ม
-router.patch('/forms/:id/status', async (req, res) => {
+router.patch('/forms/:id/status', verifyToken, async (req, res) => {
   try {
     await db.query("UPDATE forms SET status = ? WHERE id = ?", [req.body.status, req.params.id]);
     formCache.flushAll();
@@ -226,6 +229,24 @@ router.post('/forms/:id/submit', async (req, res) => {
         await connection.beginTransaction();
         const formId = req.params.id;
         const { answers, questionTitles, identityValue, summaryData } = req.body;
+
+        // 🔒 ตรวจสอบความถูกต้องของ input เบื้องต้น
+        if (isNaN(Number(formId))) {
+            connection.release();
+            return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+        }
+        if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
+            connection.release();
+            return res.status(400).json({ message: 'กรุณาตอบแบบฟอร์มให้ครบถ้วน' });
+        }
+        if (summaryData !== undefined && summaryData !== null && typeof summaryData !== 'object') {
+            connection.release();
+            return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+        }
+        if (identityValue !== undefined && identityValue !== null && typeof identityValue !== 'string') {
+            connection.release();
+            return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+        }
 
         // ดึงเลขบัตร
         let idFromAnswers = null;
@@ -425,7 +446,7 @@ const isHighRisk = scoreResults.some(s => {
 });
 
 // 11. ดึงคำตอบทั้งหมด (Dashboard ฝั่งแอดมิน - 🟢 ถอดรหัส & เพิ่ม Pagination)
-router.get('/forms/:id/responses', async (req, res) => {
+router.get('/forms/:id/responses', verifyToken, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 100;
         const offset = parseInt(req.query.offset) || 0;
@@ -481,7 +502,7 @@ router.get('/forms/:id/questions', async (req, res) => {
 });
 
 // 13. อัปเดตประเภทคลินิก
-router.patch('/forms/:id/clinic', async (req, res) => {
+router.patch('/forms/:id/clinic', verifyToken, async (req, res) => {
   try {
     await db.query('UPDATE forms SET clinic_type = ? WHERE id = ?', [req.body.clinic_type, req.params.id]);
     formCache.flushAll();
@@ -492,7 +513,7 @@ router.patch('/forms/:id/clinic', async (req, res) => {
 });
 
 // 🟢 API สำหรับคัดลอกฟอร์ม (Duplicate)
-router.post('/forms/:id/duplicate', async (req, res) => {
+router.post('/forms/:id/duplicate', verifyToken, async (req, res) => {
     try {
         const formId = req.params.id;
 
@@ -536,7 +557,7 @@ router.post('/forms/:id/duplicate', async (req, res) => {
 
     } catch (err) {
         console.error("Error duplicating form:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์" });
     }
 });
 
@@ -565,7 +586,7 @@ router.post('/submit-system-feedback', async (req, res) => {
     }
 });
 
-router.get('/evaluations/stats', async (req, res) => {
+router.get('/evaluations/stats', verifyToken, async (req, res) => {
     try {
         const [stats] = await db.query(`
             SELECT 
@@ -600,7 +621,7 @@ router.get('/evaluations/stats', async (req, res) => {
     }
 });
 
-router.get('/evaluations/list', async (req, res) => {
+router.get('/evaluations/list', verifyToken, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;

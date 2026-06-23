@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { verifyToken } = require('../middleware/authMiddleware');
 
 // ✅ PATCH ต้องอยู่บนสุด ก่อน /:idOrSlug
-router.patch('/reorder', async (req, res) => {
+router.patch('/reorder', verifyToken, async (req, res) => {
   try {
     const { order } = req.body;
     if (!Array.isArray(order) || order.length === 0) {
@@ -64,18 +65,20 @@ router.get('/', async (req, res) => {
     );
     res.json({ data: rows });
   } catch (error) {
+    console.error('Error fetching clinics:', error);
     res.status(500).json({ error: 'Failed to fetch clinics' });
   }
 });
 
 // ✅ ORDER BY sort_order แล้ว
-router.get('/all', async (req, res) => {
+router.get('/all', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(
       'SELECT * FROM clinics ORDER BY sort_order ASC, id ASC'
     );
     res.json({ data: rows });
   } catch (error) {
+    console.error('Error fetching all clinics:', error);
     res.status(500).json({ error: 'Failed to fetch all clinics' });
   }
 });
@@ -89,12 +92,13 @@ router.get('/:idOrSlug', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Clinic not found' });
     res.json({ data: rows[0] });
   } catch (error) {
+    console.error('Error fetching clinic:', error);
     res.status(500).json({ error: 'Failed to fetch clinic' });
   }
 });
 
 // ✅ INSERT ใส่ sort_order ด้วย
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
     const { slug, name, name_en, description, image, bg, is_active, show_icon } = req.body;
     if (!slug || !name) return res.status(400).json({ error: 'Slug and name are required' });
@@ -109,11 +113,12 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: 'Clinic created', id: result.insertId });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Slug already exists' });
+    console.error('Error creating clinic:', error);
     res.status(500).json({ error: 'Failed to create clinic' });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { slug, name, name_en, description, image, bg, is_active, show_icon } = req.body;
@@ -127,20 +132,21 @@ router.put('/:id', async (req, res) => {
     res.json({ message: 'Clinic updated successfully' });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'Slug already exists' });
+    console.error('Error updating clinic:', error);
     res.status(500).json({ error: 'Failed to update clinic' });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.query('DELETE FROM clinics WHERE id = ?', [id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Clinic not found' });
     res.json({ message: 'Clinic deleted successfully' });
   } catch (error) {
+    console.error('Error deleting clinic:', error);
     res.status(500).json({ error: 'Failed to delete clinic' });
   }
 });
-
 
 module.exports = router;
